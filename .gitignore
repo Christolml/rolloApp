@@ -14,5 +14,10 @@ local.properties
 /.idea/
 .DS_Store
 
+# --- Herramientas de agentes (no van al repo público) ---
+/.claude/
+/.agents/
+/skills-lock.json
+
 # --- PWA (pwa/): no hay build step, no hay nada que ignorar ---
 node_modules/
