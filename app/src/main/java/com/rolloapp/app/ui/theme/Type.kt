@@ -1,216 +1,131 @@
 package com.rolloapp.app.ui.theme
 
-import android.os.Build
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.rolloapp.app.R
 
 /**
- * Dos familias con roles que no se intercambian:
- *  - Space Grotesk → todo lo que es lenguaje (títulos, labels, botones, prosa).
- *  - JetBrains Mono → sólo valores numéricos aislados, vía [RolloNumbers].
+ * Escala tipográfica de Material 3 sobre la fuente del sistema
+ * ([FontFamily.Default] → Roboto en la mayoría de los dispositivos, o la fuente
+ * que haya elegido el fabricante). Sin fuentes empaquetadas: la app se lee igual
+ * que el resto del sistema, que es exactamente lo que se espera de una app
+ * Android prolija.
  *
- * Ambos archivos son fuentes variables (un solo `.ttf`, eje `wght`), así que los
- * pesos se piden por `FontVariation`. Eso requiere API 26; en 24–25 se carga una
- * única instancia default del archivo, que es una degradación aceptable y evita
- * el crash de aplicar variaciones en un runtime que no las soporta.
- */
-@OptIn(ExperimentalTextApi::class)
-private fun familiaVariable(resId: Int, pesos: List<Int>): FontFamily =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        FontFamily(
-            pesos.map { peso ->
-                Font(
-                    resId = resId,
-                    weight = FontWeight(peso),
-                    variationSettings = FontVariation.Settings(FontVariation.weight(peso)),
-                )
-            },
-        )
-    } else {
-        FontFamily(Font(resId))
-    }
-
-val SpaceGrotesk: FontFamily = familiaVariable(
-    resId = R.font.space_grotesk_variable,
-    pesos = listOf(400, 500, 600, 700),
-)
-
-val JetBrainsMono: FontFamily = familiaVariable(
-    resId = R.font.jetbrains_mono_variable,
-    pesos = listOf(400, 500, 600),
-)
-
-/**
- * Los 15 roles de Material 3 en Space Grotesk. Tracking más ajustado que el
- * default (y negativo en los tamaños grandes): un panel de instrumento se lee
- * compacto, no espaciado.
+ * Respecto del default de M3 sólo se ajusta el peso de los roles de título y
+ * etiqueta (`Medium`/`SemiBold`), que es lo que da jerarquía sin cambiar de
+ * familia. Los tamaños, interlineados y `letterSpacing` son los de la
+ * especificación: no hay razón para pelearse con valores ya probados.
+ *
+ * Los números no tienen estilo propio: usan los mismos roles de esta escala
+ * (`titleLarge`, `titleMedium`, `bodyLarge`…) y se destacan con
+ * [FontWeight.Bold] donde hace falta.
  */
 val RolloTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.Medium,
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
         fontSize = 57.sp,
-        lineHeight = 62.sp,
-        letterSpacing = (-1.0).sp,
+        lineHeight = 64.sp,
+        letterSpacing = (-0.25).sp,
     ),
     displayMedium = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.Medium,
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
         fontSize = 45.sp,
-        lineHeight = 50.sp,
-        letterSpacing = (-0.8).sp,
-    ),
-    displaySmall = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.Medium,
-        fontSize = 36.sp,
-        lineHeight = 42.sp,
-        letterSpacing = (-0.5).sp,
-    ),
-    headlineLarge = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 32.sp,
-        lineHeight = 38.sp,
-        letterSpacing = (-0.5).sp,
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
-        letterSpacing = (-0.4).sp,
-    ),
-    headlineSmall = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 30.sp,
-        letterSpacing = (-0.3).sp,
-    ),
-    titleLarge = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.2).sp,
-    ),
-    titleMedium = TextStyle(
-        fontFamily = SpaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 22.sp,
+        lineHeight = 52.sp,
         letterSpacing = 0.sp,
     ),
-    titleSmall = TextStyle(
-        fontFamily = SpaceGrotesk,
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
+        letterSpacing = 0.sp,
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = 0.sp,
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp,
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.15.sp,
+    ),
+    titleSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
     bodyLarge = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.1.sp,
+        letterSpacing = 0.5.sp,
     ),
     bodyMedium = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.1.sp,
+        letterSpacing = 0.25.sp,
     ),
     bodySmall = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.2.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.4.sp,
     ),
     labelLarge = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
     labelMedium = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.3.sp,
+        letterSpacing = 0.5.sp,
     ),
     labelSmall = TextStyle(
-        fontFamily = SpaceGrotesk,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.3.sp,
+        letterSpacing = 0.5.sp,
     ),
 )
-
-/**
- * Estilos monoespaciados para **valores numéricos aislados** (un precio, una
- * cantidad, un índice de ranking). Nunca para oraciones que mencionan un número
- * de paso: esas siguen en Space Grotesk.
- *
- * Al ser monoespaciada, una columna de precios queda alineada dígito a dígito y
- * los valores no “bailan” mientras se tipea en el formulario.
- */
-object RolloNumbers {
-    /** Número grande del cálculo en vivo. */
-    val hero = TextStyle(
-        fontFamily = JetBrainsMono,
-        fontWeight = FontWeight.Medium,
-        fontSize = 40.sp,
-        lineHeight = 46.sp,
-        letterSpacing = (-1.5).sp,
-    )
-
-    /** Valor destacado dentro de una lista de métricas. */
-    val emphasized = TextStyle(
-        fontFamily = JetBrainsMono,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.5).sp,
-    )
-
-    /** Valor normal de una fila de métrica. */
-    val regular = TextStyle(
-        fontFamily = JetBrainsMono,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 22.sp,
-        letterSpacing = (-0.2).sp,
-    )
-
-    /** Dato secundario en letra chica. */
-    val caption = TextStyle(
-        fontFamily = JetBrainsMono,
-        fontWeight = FontWeight.Normal,
-        fontSize = 13.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.sp,
-    )
-
-    /** Marcador de posición del ranking: "01", "02", "03". */
-    val rankIndex = TextStyle(
-        fontFamily = JetBrainsMono,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 1.sp,
-    )
-}

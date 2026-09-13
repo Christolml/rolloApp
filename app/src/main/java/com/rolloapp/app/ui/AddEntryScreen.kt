@@ -11,14 +11,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,13 +25,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import com.rolloapp.app.domain.PaperPriceBreakdown
 import com.rolloapp.app.domain.PaperPriceCalculator
-import com.rolloapp.app.ui.theme.JetBrainsMono
-import com.rolloapp.app.ui.theme.RolloNumbers
 import com.rolloapp.app.ui.theme.Spacing
 
 /**
@@ -72,13 +67,13 @@ fun AddEntryScreen(
     ) {
         SectionLabel("Datos del paquete")
 
-        InstrumentField(
+        CampoFormulario(
             value = marca,
             onValueChange = { marca = it },
             label = "Marca",
         )
 
-        InstrumentField(
+        CampoFormulario(
             value = precioTexto,
             onValueChange = { precioTexto = it },
             label = "Precio del paquete",
@@ -89,10 +84,9 @@ fun AddEntryScreen(
                 null
             },
             keyboardType = KeyboardType.Decimal,
-            monoValue = true,
         )
 
-        InstrumentField(
+        CampoFormulario(
             value = rollosTexto,
             onValueChange = { rollosTexto = it },
             label = "Rollos por paquete",
@@ -103,10 +97,9 @@ fun AddEntryScreen(
                 null
             },
             keyboardType = KeyboardType.Number,
-            monoValue = true,
         )
 
-        InstrumentField(
+        CampoFormulario(
             value = hojasTexto,
             onValueChange = { hojasTexto = it },
             label = "Hojas por rollo",
@@ -117,7 +110,6 @@ fun AddEntryScreen(
                 null
             },
             keyboardType = KeyboardType.Number,
-            monoValue = true,
         )
 
         LiveResultCard(desglose = desglose)
@@ -133,7 +125,6 @@ fun AddEntryScreen(
                 }
             },
             enabled = desglose != null,
-            shape = MaterialTheme.shapes.small,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Guardar")
@@ -144,19 +135,14 @@ fun AddEntryScreen(
 }
 
 /**
- * Lectura principal del instrumento: el precio por 100 hojas —la magnitud con la
- * que realmente se comparan dos marcas— en grande, y el resto como métricas de
- * apoyo. Cuando falta un dato muestra un guion en vez de colapsar, así el panel
- * no salta de alto mientras se tipea.
+ * Resultado del cálculo mientras se escribe. El precio por hoja va destacado
+ * porque es el mismo dato con el que ordena y compara la pestaña "Comparar".
+ * Cuando falta un dato muestra un guion en vez de colapsar, así el panel no salta
+ * de alto mientras se tipea.
  */
 @Composable
 private fun LiveResultCard(desglose: PaperPriceBreakdown?, modifier: Modifier = Modifier) {
-    OutlinedCard(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
+    Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -169,36 +155,40 @@ private fun LiveResultCard(desglose: PaperPriceBreakdown?, modifier: Modifier = 
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
-                    // Placeholder con forma de lectura ("—.—") y no un guion
-                    // suelto: mantiene el alto del panel estable y se lee como
-                    // un instrumento sin señal, no como un glitch.
-                    text = desglose?.let { formatoMoneda(it.precioPor100Hojas) } ?: "—.—",
-                    style = RolloNumbers.hero,
+                    text = "Precio por hoja",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = desglose?.let { formatoMoneda(it.precioPorHoja) } ?: "—",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = if (desglose == null) {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
                         MaterialTheme.colorScheme.primary
                     },
                 )
-                Text(
-                    text = "por 100 hojas",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = Spacing.xs),
-                )
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider()
+
+            MetricRow(
+                etiqueta = "Precio por rollo",
+                valor = desglose?.let { formatoMoneda(it.precioPorRollo) } ?: "—",
+            )
+            MetricRow(
+                etiqueta = "Precio por 100 hojas",
+                valor = desglose?.let { formatoMoneda(it.precioPor100Hojas) } ?: "—",
+            )
 
             if (desglose == null) {
                 Text(
                     text = "Completá precio, rollos y hojas para ver los precios unitarios.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } else {
-                MetricRow("Precio por rollo", formatoMoneda(desglose.precioPorRollo))
-                MetricRow("Precio por hoja", formatoMoneda(desglose.precioPorHoja))
             }
         }
     }
@@ -209,16 +199,16 @@ private fun LiveResultCard(desglose: PaperPriceBreakdown?, modifier: Modifier = 
 internal fun SectionLabel(texto: String, modifier: Modifier = Modifier) {
     Text(
         text = texto,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )
 }
 
 /**
- * Fila etiqueta / valor reutilizada por las tres pantallas. Es el único punto de
- * control de la gramática visual de la app: el texto va en Space Grotesk a la
- * izquierda, el número en mono alineado a la derecha.
+ * Fila etiqueta / valor reutilizada por las tres pantallas: la etiqueta en gris a
+ * la izquierda, el valor alineado a la derecha. `destacado` lo pasa a negrita, sin
+ * cambiar de familia tipográfica.
  */
 @Composable
 internal fun MetricRow(
@@ -227,6 +217,7 @@ internal fun MetricRow(
     modifier: Modifier = Modifier,
     destacado: Boolean = false,
     valorColor: Color = MaterialTheme.colorScheme.onSurface,
+    etiquetaColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -236,12 +227,17 @@ internal fun MetricRow(
         Text(
             text = etiqueta,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = etiquetaColor,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = valor,
-            style = if (destacado) RolloNumbers.emphasized else RolloNumbers.regular,
+            style = if (destacado) {
+                MaterialTheme.typography.titleMedium
+            } else {
+                MaterialTheme.typography.bodyLarge
+            },
+            fontWeight = if (destacado) FontWeight.Bold else FontWeight.Normal,
             color = valorColor,
             textAlign = TextAlign.End,
         )
@@ -249,13 +245,12 @@ internal fun MetricRow(
 }
 
 /**
- * Campo del formulario con estética de instrumento: sin caja, sólo la línea de
- * base que se enciende en Fósforo al enfocar. Es un `TextField` de M3 con el
- * contenedor en transparente, así el foco, el IME y el estado de error siguen
- * resueltos por el componente estándar.
+ * `OutlinedTextField` de Material 3 con los parámetros que repiten las dos
+ * pantallas con formulario. Sin personalización de colores ni de forma: el campo
+ * se ve como en cualquier otra app Android.
  */
 @Composable
-internal fun InstrumentField(
+internal fun CampoFormulario(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -263,9 +258,8 @@ internal fun InstrumentField(
     isError: Boolean = false,
     supportingText: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
-    monoValue: Boolean = false,
 ) {
-    TextField(
+    OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
@@ -273,23 +267,6 @@ internal fun InstrumentField(
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        textStyle = if (monoValue) {
-            LocalTextStyle.current.copy(fontFamily = JetBrainsMono)
-        } else {
-            LocalTextStyle.current
-        },
-        shape = RectangleShape,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            disabledContainerColor = Color.Transparent,
-            errorContainerColor = Color.Transparent,
-            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline,
-            errorIndicatorColor = MaterialTheme.colorScheme.error,
-            cursorColor = MaterialTheme.colorScheme.primary,
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-        ),
         modifier = modifier.fillMaxWidth(),
     )
 }
