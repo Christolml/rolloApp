@@ -79,6 +79,22 @@
       "dependencies": ["feat-004"],
       "status": "done",
       "evidence": "./gradlew testDebugUnitTest -> 16 tests, 0 fallos; assembleDebug -> BUILD SUCCESSFUL; :app:lintDebug -> 0 errores. Probado a mano en SM_S918U1 (2026-09-13) vía adb: 3 tarjetas con desglose completo visibles sin scroll, diálogo '¿Eliminar X?' confirmado (Cancelar no borra, capturas de pantalla revisadas), tipografía del sistema legible, colores Material You normales (sin verde fósforo/violeta)."
+    },
+    {
+      "id": "feat-011",
+      "name": "Precio por hoja con decimales suficientes",
+      "description": "La aritmética del calculador era correcta, pero el formato redondeaba el precio por hoja a 2 decimales y las cifras derivadas no cerraban en pantalla: $4500/16 rollos/320 hojas mostraba '$0.88 por hoja' junto a '$87.89 por 100 hojas'. formatoMoneda pasa a 4 decimales por debajo de $1.",
+      "dependencies": ["feat-003"],
+      "status": "done",
+      "evidence": "Nuevo FormattingTest (4 tests) + los 16 de PaperPriceCalculatorTest, todos verdes. Invariantes de la aritmética verificadas aparte sobre 5 paquetes distintos (precioPorRollo*rollos==precio, precioPorHoja*hojasTotales==precio, precioPor100Hojas/100==precioPorHoja) y el ida y vuelta de la simulación (guardar una simulación y recalcularla conserva el precio por hoja). Confirmado en pantalla: '$0.8789' y '$87.89'."
+    },
+    {
+      "id": "feat-012",
+      "name": "Rediseño visual sobre referencia fintech",
+      "description": "Tercer rediseño, esta vez a partir de una imagen de referencia que dio el usuario (app de gastos): panel superior teal con esquinas inferiores redondeadas que llega hasta el borde de la pantalla y muestra el dato principal de cada pantalla, tarjetas blancas de esquinas generosas, chip de ícono en verde menta por fila, badges píldora, botones píldora teal y montos alineados a la derecha. Tipografía Poppins (4 pesos empaquetados). Color de marca fijo: se quita Material You porque la referencia fija el teal. Se conserva el desglose completo por tarjeta y el diálogo de confirmación al eliminar.",
+      "dependencies": ["feat-010"],
+      "status": "done",
+      "evidence": "./gradlew testDebugUnitTest -> 20 tests, 0 fallos; assembleDebug -> APK 11.4 MB; :app:lintDebug -> 0 errores. Probado a mano en SM_S918U1 (2026-09-13) en modo oscuro y claro, con capturas revisadas de las tres pantallas: en 'Comparar' entran 3 tarjetas completas con el desglose de 3 métricas sin scrollear."
     }
   ]
 }

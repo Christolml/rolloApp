@@ -1,20 +1,20 @@
 package com.rolloapp.app.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -46,11 +46,10 @@ private data class SeccionPrincipal(
 )
 
 private val secciones = listOf(
-    SeccionPrincipal(Rutas.AGREGAR, "Agregar", Icons.Filled.Add),
-    SeccionPrincipal(Rutas.COMPARAR, "Comparar", Icons.AutoMirrored.Filled.List),
+    SeccionPrincipal(Rutas.AGREGAR, "Agregar", Icons.Outlined.Add),
+    SeccionPrincipal(Rutas.COMPARAR, "Comparar", Icons.AutoMirrored.Outlined.List),
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RolloNavHost(
     viewModel: PaperViewModel,
@@ -68,34 +67,13 @@ fun RolloNavHost(
 
     Scaffold(
         modifier = modifier,
-        topBar = {
-            // Defaults de M3 sin overrides: así el tinte al scrollear y el
-            // comportamiento con color dinámico son los que espera el sistema.
-            TopAppBar(
-                title = {
-                    Text(
-                        when (rutaActual) {
-                            Rutas.AGREGAR -> "Agregar paquete"
-                            Rutas.COMPARAR -> "Comparar"
-                            else -> "Detalle"
-                        },
-                    )
-                },
-                navigationIcon = {
-                    if (!esSeccionPrincipal) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                            )
-                        }
-                    }
-                },
-            )
-        },
+        // Sin `topBar`: cada pantalla dibuja su propio panel teal, que llega hasta
+        // el borde superior. Por eso el Scaffold solo reserva la barra de
+        // navegación del sistema, no la de estado.
+        contentWindowInsets = WindowInsets.navigationBars,
         bottomBar = {
             if (esSeccionPrincipal) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     secciones.forEach { seccion ->
                         NavigationBarItem(
                             selected = rutaActual == seccion.ruta,
@@ -109,6 +87,13 @@ fun RolloNavHost(
                             },
                             icon = { Icon(seccion.icono, contentDescription = seccion.titulo) },
                             label = { Text(seccion.titulo) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                         )
                     }
                 }
@@ -152,9 +137,10 @@ fun RolloNavHost(
                 val entryId = entry.arguments?.getLong(Rutas.ARG_ENTRY_ID) ?: -1L
                 EntryDetailScreen(
                     entrada = entradas.firstOrNull { it.id == entryId },
+                    onVolver = { navController.popBackStack() },
                     onGuardarSimulacion = { entrada, hojas, precioSimulado ->
                         viewModel.guardar(
-                            marca = "${entrada.marca} (${hojas} hojas)",
+                            marca = "${entrada.marca} ($hojas hojas)",
                             precio = precioSimulado,
                             rollosPorPaquete = entrada.rollosPorPaquete,
                             hojasPorRollo = hojas,
