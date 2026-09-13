@@ -1,7 +1,7 @@
 // Service worker: cachea el app shell para que la app abra sin conexión.
 // Al cambiar cualquier archivo del shell, subir CACHE para que se reinstale.
 
-const CACHE = 'rolloapp-v1';
+const CACHE = 'rolloapp-v2';
 
 const SHELL = [
   './',

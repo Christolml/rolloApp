@@ -57,12 +57,22 @@
   box-sizing: border-box;
 }
 
+/* Varias reglas de acá declaran `display`, que le gana al `display:none` que el
+   navegador aplica por `[hidden]`. Sin esto, los elementos ocultos por JS
+   (la flecha de volver) siguen viéndose. */
+[hidden] {
+  display: none !important;
+}
+
+/* Teal arriba para que el rebote del scroll no muestre una banda clara sobre el
+   panel; el body cubre el resto de la pantalla aunque el contenido sea corto. */
 html {
   background: var(--teal);
 }
 
 body {
   margin: 0;
+  min-height: 100dvh;
   background: var(--fondo);
   color: var(--texto);
   font-family: 'Poppins', system-ui, sans-serif;
@@ -486,7 +496,10 @@ hr {
   text-decoration: none;
 }
 
+/* `content-box` a propósito: con el `border-box` global, el padding se comía los
+   24px del ícono y el glifo quedaba en cero. */
 .tabs__item svg {
+  box-sizing: content-box;
   width: 24px;
   height: 24px;
   padding: 2px 16px;
