@@ -1,0 +1,46 @@
+name: Publicar PWA en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pwa/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una publicación a la vez; no cancela la que está en curso.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Los mismos casos que los tests de Kotlin: si el port se desvía, no se publica.
+      - run: node --test pwa/js/calculator.test.mjs
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      # Se publica solo pwa/: el proyecto Android no forma parte del sitio.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pwa
+      - id: deployment
+        uses: actions/deploy-pages@v4

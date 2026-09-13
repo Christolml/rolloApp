@@ -1,13 +1,18 @@
+# --- Android (android/) ---
 *.iml
 .gradle/
-/local.properties
-/.idea/
-.DS_Store
-/build
-/app/build
-/captures
+.kotlin/
+local.properties
+/android/build
+/android/app/build
+/android/captures
 .externalNativeBuild
 .cxx
-local.properties
 *.hprof
-.kotlin/
+
+# --- Editores / SO ---
+/.idea/
+.DS_Store
+
+# --- PWA (pwa/): no hay build step, no hay nada que ignorar ---
+node_modules/

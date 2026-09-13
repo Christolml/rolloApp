@@ -1,21 +1,45 @@
 # CLAUDE.md — RolloApp
 
-App Android nativa (Kotlin + Jetpack Compose + Room) que calcula precio real por hoja
-y por rollo de papel higiénico, guarda un historial persistente para comparar marcas,
-y permite simular el precio equivalente de un paquete con otra cantidad de hojas.
+Calcula el precio real por hoja y por rollo de papel higiénico, guarda un historial
+para comparar marcas, y permite simular el precio equivalente de un paquete con otra
+cantidad de hojas. Sin backend, sin cuentas: todo vive en el dispositivo.
 
-Package id: `com.rolloapp.app`. Sin backend, sin cuentas, todo local en el dispositivo.
+Hay **dos versiones de la misma app**, cada una en su carpeta:
+
+| Carpeta | Qué es | Cómo se entrega |
+|---|---|---|
+| `android/` | App Android nativa (Kotlin + Compose + Room), package `com.rolloapp.app` | APK debug instalado por `adb` |
+| `pwa/` | Versión web instalable (HTML/CSS/JS puro, sin build step, `localStorage`) | GitHub Pages: https://christolml.github.io/rolloApp/ |
+
+Las dos comparten la **misma aritmética y el mismo formateo**: `pwa/js/calculator.js`
+y `pwa/js/format.js` son un port 1:1 de `PaperPriceCalculator.kt` y `Formatting.kt`.
+**Si tocás una fórmula o un redondeo, tocá las dos versiones y sus tests**, o van a
+mostrar números distintos para el mismo paquete.
+
+Los datos NO se comparten entre las dos: Room en el celular, `localStorage` en el
+navegador.
 
 ## Startup Workflow
 
 1. **Confirm working directory** with `pwd`
 2. **Read this file** completely
 3. **Read `feature_list.json`** to see current feature state
-4. **Run `./init.sh`** to verify environment is healthy (recrea `local.properties` si
-   falta, compila, corre tests)
+4. **Run `android/init.sh`** (desde `android/`) para verificar el entorno Android, y
+   `node --test pwa/js/calculator.test.mjs` para la PWA
 5. **Review recent commits** with `git log --oneline -5`
 
 If baseline verification is failing, repair that first before adding new scope.
+
+## La PWA
+
+- Sin dependencias ni build: los archivos de `pwa/` se publican tal cual. Probala con
+  `cd pwa && python3 -m http.server 8080`.
+- **Todas las rutas tienen que ser relativas** (`./js/...`): GitHub Pages sirve el
+  sitio bajo `/rolloApp/`, así que cualquier ruta absoluta rompe en producción.
+- Al cambiar cualquier archivo del app shell, subí la constante `CACHE` en `pwa/sw.js`
+  o los usuarios van a seguir viendo la versión vieja desde el caché.
+- El deploy lo hace `.github/workflows/pages.yml` en cada push a `main` que toque
+  `pwa/`; corre los tests del port antes de publicar.
 
 ## Stack y decisiones ya tomadas (no las reabras sin razón nueva)
 
@@ -76,20 +100,27 @@ Before ending a session:
 ## Definition of Done
 
 - [ ] Comportamiento implementado
-- [ ] `./gradlew testDebugUnitTest` pasa
-- [ ] `./gradlew assembleDebug` genera el APK sin errores
-- [ ] Si el cambio toca UI: probado a mano en el dispositivo conectado (`adb
-      install -r app/build/outputs/apk/debug/app-debug.apk`), no solo compilado
+- [ ] Android: `cd android && ./gradlew testDebugUnitTest assembleDebug` sin errores
+- [ ] PWA: `node --test pwa/js/calculator.test.mjs` pasa
+- [ ] Si el cambio toca UI de Android: probado a mano en el dispositivo (`adb install
+      -r android/app/build/outputs/apk/debug/app-debug.apk`), no solo compilado
+- [ ] Si el cambio toca la PWA: probada en el navegador, no solo servida
 - [ ] Evidencia registrada en `feature_list.json` / `progress.md`
 
 ## Verification Commands
 
 ```bash
-./init.sh                        # setup + tests + build, ver abajo
+# Android (todo desde android/)
+cd android
+./init.sh                        # setup + tests + build
 ./gradlew testDebugUnitTest      # solo unit tests del cálculo (rápido)
 ./gradlew assembleDebug          # genera app/build/outputs/apk/debug/app-debug.apk
 adb devices                      # confirma que el celular está autorizado
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# PWA (desde la raíz)
+node --test pwa/js/calculator.test.mjs
+cd pwa && python3 -m http.server 8080
 ```
 
 ## Escalation
