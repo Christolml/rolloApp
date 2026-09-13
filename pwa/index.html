@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RolloApp — precio por hoja</title>
+    <meta
+      name="description"
+      content="Calcula el precio real por hoja y por rollo de papel higiénico y compara marcas."
+    />
+    <meta name="theme-color" content="#0E6B69" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <header class="panel" id="panel">
+      <div class="panel__barra">
+        <button class="panel__volver" id="btn-volver" type="button" hidden aria-label="Volver">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
+        </button>
+        <h1 class="panel__titulo" id="panel-titulo">Agregar paquete</h1>
+      </div>
+      <div class="panel__cuerpo" id="panel-cuerpo"></div>
+    </header>
+
+    <main id="vista"></main>
+
+    <nav class="tabs">
+      <a class="tabs__item" href="#/agregar" data-tab="agregar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>
+        <span>Agregar</span>
+      </a>
+      <a class="tabs__item" href="#/comparar" data-tab="comparar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h2v2H4zm0 5h2v2H4zm0 5h2v2H4zm4-10h12v2H8zm0 5h12v2H8zm0 5h12v2H8z"/></svg>
+        <span>Comparar</span>
+      </a>
+    </nav>
+
+    <dialog class="dialogo" id="dialogo-eliminar">
+      <h2 id="dialogo-titulo">¿Eliminar?</h2>
+      <p>Esta acción no se puede deshacer.</p>
+      <div class="dialogo__acciones">
+        <button type="button" class="boton-texto" id="dialogo-cancelar">Cancelar</button>
+        <button type="button" class="boton-texto boton-texto--peligro" id="dialogo-confirmar">
+          Eliminar
+        </button>
+      </div>
+    </dialog>
+
+    <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
