@@ -1,38 +1,53 @@
 package com.rolloapp.app.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rolloapp.app.ui.theme.RolloNumbers
+import com.rolloapp.app.ui.theme.Spacing
 
 /**
- * Historial completo ordenado por precio por hoja ascendente. La primera entrada
- * es la más conveniente y se resalta con un badge "Mejor opción".
+ * Ranking real: el historial ya llega ordenado por precio por hoja ascendente,
+ * así que la posición 01 es la opción más conveniente y los marcadores numéricos
+ * están justificados. La franja Fósforo del borde izquierdo marca esa primera
+ * posición sin teñir la card entera.
  */
 @Composable
 fun ComparisonScreen(
@@ -46,17 +61,33 @@ fun ComparisonScreen(
         return
     }
 
+    // Los extremos del rango se calculan una sola vez para toda la lista, no por
+    // fila: la escala tiene que ser la misma para que comparar tenga sentido.
+    val minPrecioPorHoja = remember(entradas) { entradas.minOfOrNull { it.precioPorHoja } ?: 0.0 }
+    val maxPrecioPorHoja = remember(entradas) { entradas.maxOfOrNull { it.precioPorHoja } ?: 0.0 }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        items(items = entradas, key = { it.id }) { entrada ->
+        itemsIndexed(items = entradas, key = { _, entrada -> entrada.id }) { indice, entrada ->
             DismissableEntry(
                 entrada = entrada,
-                esMejorOpcion = entrada.id == entradas.first().id,
+                posicion = indice + 1,
+                esMejorOpcion = indice == 0,
+                minPrecioPorHoja = minPrecioPorHoja,
+                maxPrecioPorHoja = maxPrecioPorHoja,
                 onSeleccionar = { onSeleccionar(entrada) },
                 onEliminar = { onEliminar(entrada) },
+                // Única animación de la app: cuando entra un paquete más barato,
+                // las filas existentes se reacomodan en vez de saltar.
+                modifier = Modifier.animateItem(
+                    placementSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                ),
             )
         }
     }
@@ -66,7 +97,10 @@ fun ComparisonScreen(
 @Composable
 private fun DismissableEntry(
     entrada: PaperEntryUi,
+    posicion: Int,
     esMejorOpcion: Boolean,
+    minPrecioPorHoja: Double,
+    maxPrecioPorHoja: Double,
     onSeleccionar: () -> Unit,
     onEliminar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -90,23 +124,28 @@ private fun DismissableEntry(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.error,
+                        // Mismo shape que la card de contenido: si difieren se ve
+                        // una costura durante el gesto.
+                        shape = MaterialTheme.shapes.medium,
                     )
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = Spacing.xl),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    tint = MaterialTheme.colorScheme.onError,
                 )
             }
         },
     ) {
         EntryCard(
             entrada = entrada,
+            posicion = posicion,
             esMejorOpcion = esMejorOpcion,
+            minPrecioPorHoja = minPrecioPorHoja,
+            maxPrecioPorHoja = maxPrecioPorHoja,
             onClick = onSeleccionar,
         )
     }
@@ -115,92 +154,141 @@ private fun DismissableEntry(
 @Composable
 private fun EntryCard(
     entrada: PaperEntryUi,
+    posicion: Int,
     esMejorOpcion: Boolean,
+    minPrecioPorHoja: Double,
+    maxPrecioPorHoja: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    val acento = if (esMejorOpcion) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    OutlinedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = if (esMejorOpcion) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        } else {
-            CardDefaults.cardColors()
-        },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .then(
+                    if (esMejorOpcion) {
+                        Modifier.semantics {
+                            contentDescription = "Mejor opción: ${entrada.marca}"
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = entrada.marca,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (esMejorOpcion) {
-                    Etiqueta(
-                        texto = "Mejor opción",
-                        fondo = MaterialTheme.colorScheme.primary,
-                        contenido = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
-                if (entrada.esSimulado) {
-                    Etiqueta(
-                        texto = "Simulado",
-                        fondo = MaterialTheme.colorScheme.tertiaryContainer,
-                        contenido = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-            }
-
-            Text(
-                text = "${formatoMonedaCorta(entrada.precio)} · " +
-                    "${entrada.rollosPorPaquete} rollos · ${entrada.hojasPorRollo} hojas c/u",
-                style = MaterialTheme.typography.bodyMedium,
+            // La franja reemplaza a la card entera pintada: marca la posición 01
+            // sin gritar ni romper la jerarquía de color del resto del contenido.
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .fillMaxHeight()
+                    .background(if (esMejorOpcion) acento else Color.Transparent),
             )
 
-            MetricRow("Precio por hoja", formatoMoneda(entrada.precioPorHoja), destacado = true)
-            MetricRow("Precio por 100 hojas", formatoMoneda(entrada.precioPor100Hojas))
-            MetricRow("Precio por rollo", formatoMoneda(entrada.precioPorRollo))
+            Column(
+                modifier = Modifier.padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = posicion.toString().padStart(2, '0'),
+                        style = RolloNumbers.rankIndex,
+                        color = acento,
+                    )
+                    Text(
+                        text = entrada.marca,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (entrada.esSimulado) {
+                        EtiquetaBorde(
+                            texto = "Simulado",
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                }
+
+                MagnitudeScale(
+                    value = entrada.precioPorHoja,
+                    min = minPrecioPorHoja,
+                    max = maxPrecioPorHoja,
+                    highlighted = esMejorOpcion,
+                )
+
+                MetricRow(
+                    etiqueta = "Precio por hoja",
+                    valor = formatoMoneda(entrada.precioPorHoja),
+                    destacado = true,
+                    valorColor = if (esMejorOpcion) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                MetricRow("Precio por 100 hojas", formatoMoneda(entrada.precioPor100Hojas))
+                MetricRow("Precio por rollo", formatoMoneda(entrada.precioPorRollo))
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                MetricRow("Precio del paquete", formatoMonedaCorta(entrada.precio))
+                MetricRow("Rollos por paquete", entrada.rollosPorPaquete.toString())
+                MetricRow("Hojas por rollo", entrada.hojasPorRollo.toString())
+            }
         }
     }
 }
 
+/**
+ * Etiqueta con borde, no píldora rellena: informa una condición de la entrada
+ * sin competir en peso visual con los valores numéricos.
+ */
 @Composable
-private fun Etiqueta(
+private fun EtiquetaBorde(
     texto: String,
-    fondo: androidx.compose.ui.graphics.Color,
-    contenido: androidx.compose.ui.graphics.Color,
+    color: Color,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
-        color = fondo,
-        contentColor = contenido,
-        shape = RoundedCornerShape(50),
+        color = Color.Transparent,
+        contentColor = color,
+        border = BorderStroke(1.dp, color),
+        shape = MaterialTheme.shapes.extraSmall,
     ) {
         Text(
             text = texto,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
         )
     }
 }
 
 @Composable
 private fun EmptyState(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.padding(32.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.padding(Spacing.xxl), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Text(
                 text = "Todavía no hay paquetes",
@@ -209,6 +297,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
             Text(
                 text = "Agregá uno desde la pestaña \"Agregar\" para empezar a comparar.",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

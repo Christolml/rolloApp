@@ -57,6 +57,14 @@
       "evidence": ""
     },
     {
+      "id": "feat-009",
+      "name": "Rediseño visual \"HUD de precisión\"",
+      "description": "Reemplazo de la plantilla default de Android Studio por una identidad propia: paleta de 6 tokens con variante Glow (oscuro) / Ink (claro) mapeada 1:1 a los roles de ColorScheme (sin CompositionLocal propio, dynamicColor eliminado), Space Grotesk + JetBrains Mono como fuentes variables, shapes de 2-8dp, bordes en vez de sombras, MetricRow como único punto de control de la gramática número/texto, MagnitudeScale en el ranking, franja de acento en vez de cards pintadas, InstrumentField sobre TextField M3, e ícono launcher en Grafito + Fósforo. Sin cambios de lógica.",
+      "dependencies": ["feat-004"],
+      "status": "done",
+      "evidence": "./gradlew testDebugUnitTest -> 16 tests, 0 fallos (lógica intacta); assembleDebug -> app-debug.apk 10.7 MiB; :app:lintDebug -> 0 errores (15 warnings preexistentes de versiones). Probado a mano en SM_S918U1 (2026-09-13) en modo oscuro y claro: ranking 01/02/03 con reordenamiento animado al eliminar, swipe-to-delete en Alerta sólido, badge 'Simulado' con borde, snackbar con inverseSurface propio, estado de error en Alerta. Contrastes WCAG AA verificados por cálculo (mínimo 4.95:1 en texto/acentos)."
+    },
+    {
       "id": "feat-008",
       "name": "Harness de documentación para agentes",
       "description": "CLAUDE.md, feature_list.json, progress.md, session-handoff.md, init.sh específicos de RolloApp (no placeholders genéricos).",
