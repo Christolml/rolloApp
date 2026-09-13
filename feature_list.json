@@ -1,0 +1,68 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Toolchain y esqueleto Gradle",
+      "description": "settings.gradle.kts, build.gradle.kts, version catalog, wrapper, local.properties/gradle.properties (JDK 26 + SDK android-35). Debe compilar desde un checkout limpio.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "./gradlew assembleDebug BUILD SUCCESSFUL con Gradle 9.6.1 + AGP 9.4.0 + Kotlin 2.3.21 (commit 48fef8a)"
+    },
+    {
+      "id": "feat-002",
+      "name": "Capa de datos (Room)",
+      "description": "Entity PaperPackage (marca, precio, rollosPorPaquete, hojasPorRollo, fecha, esSimulado), PaperPackageDao (insert/delete/observeAll Flow), AppDatabase, PaperRepository.",
+      "dependencies": ["feat-001"],
+      "status": "done",
+      "evidence": "app/src/main/java/com/rolloapp/app/data/*.kt — Room genera AppDatabase_Impl y PaperPackageDao_Impl sin warnings en el build"
+    },
+    {
+      "id": "feat-003",
+      "name": "Calculadora de precios + unit tests",
+      "description": "PaperPriceCalculator (precioPorRollo, precioPorHoja, precioPor100Hojas, simulación con hojas hipotéticas) como funciones puras sin dependencias de Android.",
+      "dependencies": ["feat-001"],
+      "status": "done",
+      "evidence": "./gradlew testDebugUnitTest -> 16 tests, 0 fallos (PaperPriceCalculatorTest.kt: fórmulas, entradas inválidas, simulación, comparación entre marcas)"
+    },
+    {
+      "id": "feat-004",
+      "name": "UI Compose: Agregar / Comparar / Detalle",
+      "description": "AddEntryScreen (cálculo en vivo), ComparisonScreen (historial ordenado por precio/hoja, resalta el más barato, swipe-to-delete), EntryDetailScreen (simulador de hojas hipotéticas + guardar simulación), Navigation.kt, PaperViewModel + factory manual.",
+      "dependencies": ["feat-002", "feat-003"],
+      "status": "done",
+      "evidence": "app/src/main/java/com/rolloapp/app/ui/*.kt — compila e incluido en el APK (lintDebug: 0 errores)"
+    },
+    {
+      "id": "feat-005",
+      "name": "Build de APK debug",
+      "description": "Generar app-debug.apk instalable, firmado con el certificado debug estándar.",
+      "dependencies": ["feat-004"],
+      "status": "done",
+      "evidence": "app/build/outputs/apk/debug/app-debug.apk (~10.5 MiB). aapt2 dump badging: package=com.rolloapp.app minSdk=24 targetSdk=35 launchable-activity=MainActivity. apksigner verify: OK (v2, cert Android Debug)"
+    },
+    {
+      "id": "feat-006",
+      "name": "Instalación en dispositivo físico",
+      "description": "Instalar el APK en un celular real conectado por USB (autorización adb).",
+      "dependencies": ["feat-005"],
+      "status": "done",
+      "evidence": "adb -s R5CW824J33N install -r app-debug.apk -> Success (Samsung SM_S918U1, 2026-09-12)"
+    },
+    {
+      "id": "feat-007",
+      "name": "Verificación manual end-to-end en el dispositivo",
+      "description": "Con la app ya instalada: agregar 2-3 paquetes con marca/precio/rollos/hojas distintos, confirmar que 'Comparar' los ordena correctamente de más barato a más caro, abrir el detalle de una entrada y probar el simulador de hojas hipotéticas, confirmar que 'Guardar simulación' crea una entrada nueva marcada 'Simulado' y que el historial persiste si se cierra y reabre la app.",
+      "dependencies": ["feat-006"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-008",
+      "name": "Harness de documentación para agentes",
+      "description": "CLAUDE.md, feature_list.json, progress.md, session-handoff.md, init.sh específicos de RolloApp (no placeholders genéricos).",
+      "dependencies": [],
+      "status": "in-progress",
+      "evidence": "Generado con harness-creator y personalizado con hechos reales del proyecto; falta commitear y mergear a main."
+    }
+  ]
+}
