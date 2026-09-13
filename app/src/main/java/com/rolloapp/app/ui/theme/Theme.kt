@@ -1,144 +1,140 @@
 package com.rolloapp.app.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 /**
- * Esquemas de respaldo. Se declaran **todos** los roles a mano, incluida la rampa
- * `surfaceContainer*`: `lightColorScheme()` / `darkColorScheme()` rellenan con el
- * violeta de Material Baseline cualquier slot que no se les pase, y esos slots
- * entran por la puerta de atrás (el fondo de cada `Card`, el `AlertDialog`, la
- * `NavigationBar`, el `Snackbar`). Dejarlos sin definir es lo que produce esas
- * manchas violetas que no pertenecen a la paleta.
+ * Esquinas generosas, como en la referencia: tarjetas y campos bien redondeados,
+ * y botones en forma de píldora (eso último lo resuelve cada botón con
+ * `CircleShape`, no la escala de shapes).
+ */
+val RolloShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/**
+ * Se declaran todos los roles: los que no se pasan los rellena Material Baseline
+ * con su violeta, y reaparecen por la puerta de atrás en diálogos, snackbars y
+ * fondos de tarjeta.
  */
 private val EsquemaClaro = lightColorScheme(
-    primary = PrimaryClaro,
-    onPrimary = OnPrimaryClaro,
-    primaryContainer = PrimaryContainerClaro,
-    onPrimaryContainer = OnPrimaryContainerClaro,
-    inversePrimary = PrimaryOscuro,
+    primary = Teal,
+    onPrimary = Color.White,
+    primaryContainer = Menta,
+    onPrimaryContainer = TealOscuro,
+    inversePrimary = TealClaro,
 
-    secondary = SecondaryClaro,
-    onSecondary = OnSecondaryClaro,
-    secondaryContainer = SecondaryContainerClaro,
-    onSecondaryContainer = OnSecondaryContainerClaro,
+    secondary = Teal,
+    onSecondary = Color.White,
+    secondaryContainer = Menta,
+    onSecondaryContainer = TealOscuro,
 
-    tertiary = TertiaryClaro,
-    onTertiary = OnTertiaryClaro,
-    tertiaryContainer = TertiaryContainerClaro,
-    onTertiaryContainer = OnTertiaryContainerClaro,
+    tertiary = Teal,
+    onTertiary = Color.White,
+    tertiaryContainer = Menta,
+    onTertiaryContainer = TealOscuro,
 
-    error = ErrorClaro,
-    onError = OnErrorClaro,
-    errorContainer = ErrorContainerClaro,
-    onErrorContainer = OnErrorContainerClaro,
+    error = RojoClaro,
+    onError = Color.White,
+    errorContainer = RojoContenedorClaro,
+    onErrorContainer = RojoClaro,
 
-    background = BackgroundClaro,
-    onBackground = OnBackgroundClaro,
-    surface = SurfaceClaro,
-    onSurface = OnSurfaceClaro,
-    surfaceVariant = SurfaceVariantClaro,
-    onSurfaceVariant = OnSurfaceVariantClaro,
-    surfaceTint = PrimaryClaro,
-    surfaceDim = SurfaceDimClaro,
-    surfaceBright = SurfaceBrightClaro,
-    surfaceContainerLowest = SurfaceContainerLowestClaro,
-    surfaceContainerLow = SurfaceContainerLowClaro,
-    surfaceContainer = SurfaceContainerClaro,
-    surfaceContainerHigh = SurfaceContainerHighClaro,
-    surfaceContainerHighest = SurfaceContainerHighestClaro,
+    background = FondoClaro,
+    onBackground = TextoClaro,
+    surface = SuperficieClaro,
+    onSurface = TextoClaro,
+    surfaceVariant = SuperficieTenueClaro,
+    onSurfaceVariant = TextoTenueClaro,
+    surfaceTint = Color.Transparent,
+    surfaceDim = FondoClaro,
+    surfaceBright = SuperficieClaro,
+    surfaceContainerLowest = SuperficieClaro,
+    surfaceContainerLow = SuperficieClaro,
+    surfaceContainer = SuperficieAltaClaro,
+    surfaceContainerHigh = SuperficieAltaClaro,
+    surfaceContainerHighest = SuperficieTenueClaro,
 
-    inverseSurface = InverseSurfaceClaro,
-    inverseOnSurface = InverseOnSurfaceClaro,
+    inverseSurface = TextoClaro,
+    inverseOnSurface = Color.White,
 
-    outline = OutlineClaro,
-    outlineVariant = OutlineVariantClaro,
+    outline = BordeClaro,
+    outlineVariant = BordeClaro,
     scrim = Color.Black,
 )
 
 private val EsquemaOscuro = darkColorScheme(
-    primary = PrimaryOscuro,
-    onPrimary = OnPrimaryOscuro,
-    primaryContainer = PrimaryContainerOscuro,
-    onPrimaryContainer = OnPrimaryContainerOscuro,
-    inversePrimary = PrimaryClaro,
+    primary = TealClaro,
+    onPrimary = Color(0xFF00322F),
+    primaryContainer = MentaProfunda,
+    onPrimaryContainer = TealClaro,
+    inversePrimary = Teal,
 
-    secondary = SecondaryOscuro,
-    onSecondary = OnSecondaryOscuro,
-    secondaryContainer = SecondaryContainerOscuro,
-    onSecondaryContainer = OnSecondaryContainerOscuro,
+    secondary = TealClaro,
+    onSecondary = Color(0xFF00322F),
+    secondaryContainer = MentaProfunda,
+    onSecondaryContainer = TealClaro,
 
-    tertiary = TertiaryOscuro,
-    onTertiary = OnTertiaryOscuro,
-    tertiaryContainer = TertiaryContainerOscuro,
-    onTertiaryContainer = OnTertiaryContainerOscuro,
+    tertiary = TealClaro,
+    onTertiary = Color(0xFF00322F),
+    tertiaryContainer = MentaProfunda,
+    onTertiaryContainer = TealClaro,
 
-    error = ErrorOscuro,
-    onError = OnErrorOscuro,
-    errorContainer = ErrorContainerOscuro,
-    onErrorContainer = OnErrorContainerOscuro,
+    error = RojoOscuro,
+    onError = Color(0xFF3B0A0A),
+    errorContainer = RojoContenedorOscuro,
+    onErrorContainer = RojoOscuro,
 
-    background = BackgroundOscuro,
-    onBackground = OnBackgroundOscuro,
-    surface = SurfaceOscuro,
-    onSurface = OnSurfaceOscuro,
-    surfaceVariant = SurfaceVariantOscuro,
-    onSurfaceVariant = OnSurfaceVariantOscuro,
-    surfaceTint = PrimaryOscuro,
-    surfaceDim = SurfaceDimOscuro,
-    surfaceBright = SurfaceBrightOscuro,
-    surfaceContainerLowest = SurfaceContainerLowestOscuro,
-    surfaceContainerLow = SurfaceContainerLowOscuro,
-    surfaceContainer = SurfaceContainerOscuro,
-    surfaceContainerHigh = SurfaceContainerHighOscuro,
-    surfaceContainerHighest = SurfaceContainerHighestOscuro,
+    background = FondoOscuro,
+    onBackground = TextoOscuro,
+    surface = SuperficieOscuro,
+    onSurface = TextoOscuro,
+    surfaceVariant = SuperficieTenueOscuro,
+    onSurfaceVariant = TextoTenueOscuro,
+    surfaceTint = Color.Transparent,
+    surfaceDim = FondoOscuro,
+    surfaceBright = SuperficieAltaOscuro,
+    surfaceContainerLowest = SuperficieTenueOscuro,
+    surfaceContainerLow = SuperficieOscuro,
+    surfaceContainer = SuperficieOscuro,
+    surfaceContainerHigh = SuperficieAltaOscuro,
+    surfaceContainerHighest = SuperficieAltaOscuro,
 
-    inverseSurface = InverseSurfaceOscuro,
-    inverseOnSurface = InverseOnSurfaceOscuro,
+    inverseSurface = TextoOscuro,
+    inverseOnSurface = FondoOscuro,
 
-    outline = OutlineOscuro,
-    outlineVariant = OutlineVariantOscuro,
+    outline = BordeOscuro,
+    outlineVariant = BordeOscuro,
     scrim = Color.Black,
 )
 
 /**
- * Material You por default: en Android 12+ el sistema arma la paleta a partir del
- * wallpaper del usuario, así que la app se ve integrada con el resto del teléfono
- * sin que ninguna elección de color hecha a mano pueda desentonar.
+ * Sin Material You: la referencia fija un teal concreto como color de marca, y
+ * dejar que el wallpaper del usuario lo reemplace haría que la app no se parezca
+ * a lo pedido.
  *
- * En Android 11 o anterior —o si se pasa `dynamicColor = false`, útil para
- * previews— se usan los esquemas teal de [Color.kt].
- *
- * `shapes` no se pasa: las esquinas redondeadas del default de Material 3
- * (4/8/12/16/28dp) son exactamente las que se buscan.
+ * El panel superior es siempre teal oscuro, en ambos temas, así que los íconos de
+ * la barra de estado van en claro — eso se resuelve en `MainActivity`.
  */
 @Composable
 fun RolloAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> EsquemaOscuro
-        else -> EsquemaClaro
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) EsquemaOscuro else EsquemaClaro,
         typography = RolloTypography,
+        shapes = RolloShapes,
         content = content,
     )
 }

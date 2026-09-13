@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Teal 800: el mismo hue semilla del esquema de respaldo de la app. -->
-    <color name="ic_launcher_background">#FF00695C</color>
+    <!-- El mismo teal de marca que usa el panel superior de la app. -->
+    <color name="ic_launcher_background">#FF0E6B69</color>
 </resources>

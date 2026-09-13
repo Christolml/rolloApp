@@ -4,17 +4,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,16 +29,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.rolloapp.app.domain.PaperPriceBreakdown
 import com.rolloapp.app.domain.PaperPriceCalculator
 import com.rolloapp.app.ui.theme.Spacing
 
 /**
- * Formulario para registrar un paquete. Recalcula los precios unitarios en vivo
- * mientras el usuario escribe.
+ * Alta de un paquete. El panel teal de arriba muestra el precio por hoja
+ * calculado en vivo: es el número con el que después se ordena "Comparar", así
+ * que ocupa el lugar del dato principal de la pantalla.
  */
 @Composable
 fun AddEntryScreen(
@@ -60,155 +65,154 @@ fun AddEntryScreen(
 
     Column(
         modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
     ) {
-        SectionLabel("Datos del paquete")
-
-        CampoFormulario(
-            value = marca,
-            onValueChange = { marca = it },
-            label = "Marca",
-        )
-
-        CampoFormulario(
-            value = precioTexto,
-            onValueChange = { precioTexto = it },
-            label = "Precio del paquete",
-            isError = precioTexto.isNotBlank() && precio == null,
-            supportingText = if (precioTexto.isNotBlank() && precio == null) {
-                "Ingresá un número válido"
-            } else {
-                null
-            },
-            keyboardType = KeyboardType.Decimal,
-        )
-
-        CampoFormulario(
-            value = rollosTexto,
-            onValueChange = { rollosTexto = it },
-            label = "Rollos por paquete",
-            isError = rollosTexto.isNotBlank() && (rollos == null || rollos <= 0),
-            supportingText = if (rollosTexto.isNotBlank() && (rollos == null || rollos <= 0)) {
-                "Ingresá un número mayor a cero"
-            } else {
-                null
-            },
-            keyboardType = KeyboardType.Number,
-        )
-
-        CampoFormulario(
-            value = hojasTexto,
-            onValueChange = { hojasTexto = it },
-            label = "Hojas por rollo",
-            isError = hojasTexto.isNotBlank() && (hojas == null || hojas <= 0),
-            supportingText = if (hojasTexto.isNotBlank() && (hojas == null || hojas <= 0)) {
-                "Ingresá un número mayor a cero"
-            } else {
-                null
-            },
-            keyboardType = KeyboardType.Number,
-        )
-
-        LiveResultCard(desglose = desglose)
-
-        Button(
-            onClick = {
-                if (precio != null && rollos != null && hojas != null && desglose != null) {
-                    onGuardar(marca, precio, rollos, hojas)
-                    marca = ""
-                    precioTexto = ""
-                    rollosTexto = ""
-                    hojasTexto = ""
-                }
-            },
-            enabled = desglose != null,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Guardar")
+        PanelSuperior(titulo = "Agregar paquete") {
+            EtiquetaPanel("Precio por hoja")
+            Spacer(Modifier.height(Spacing.xs))
+            CifraPanel(desglose?.let { formatoMoneda(it.precioPorHoja) } ?: "—")
+            Spacer(Modifier.height(Spacing.md))
+            ResumenPanel(desglose)
         }
 
-        Spacer(Modifier.height(Spacing.sm))
-    }
-}
-
-/**
- * Resultado del cálculo mientras se escribe. El precio por hoja va destacado
- * porque es el mismo dato con el que ordena y compara la pestaña "Comparar".
- * Cuando falta un dato muestra un guion en vez de colapsar, así el panel no salta
- * de alto mientras se tipea.
- */
-@Composable
-private fun LiveResultCard(desglose: PaperPriceBreakdown?, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            SectionLabel("Cálculo en vivo")
+            TituloSeccion("Datos del paquete")
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                Text(
-                    text = "Precio por hoja",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = desglose?.let { formatoMoneda(it.precioPorHoja) } ?: "—",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (desglose == null) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                )
-            }
-
-            HorizontalDivider()
-
-            MetricRow(
-                etiqueta = "Precio por rollo",
-                valor = desglose?.let { formatoMoneda(it.precioPorRollo) } ?: "—",
-            )
-            MetricRow(
-                etiqueta = "Precio por 100 hojas",
-                valor = desglose?.let { formatoMoneda(it.precioPor100Hojas) } ?: "—",
+            CampoFormulario(
+                value = marca,
+                onValueChange = { marca = it },
+                label = "Marca",
             )
 
-            if (desglose == null) {
-                Text(
-                    text = "Completá precio, rollos y hojas para ver los precios unitarios.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            CampoFormulario(
+                value = precioTexto,
+                onValueChange = { precioTexto = it },
+                label = "Precio del paquete",
+                isError = precioTexto.isNotBlank() && precio == null,
+                supportingText = if (precioTexto.isNotBlank() && precio == null) {
+                    "Ingresá un número válido"
+                } else {
+                    null
+                },
+                keyboardType = KeyboardType.Decimal,
+            )
+
+            CampoFormulario(
+                value = rollosTexto,
+                onValueChange = { rollosTexto = it },
+                label = "Rollos por paquete",
+                isError = rollosTexto.isNotBlank() && (rollos == null || rollos <= 0),
+                supportingText = if (rollosTexto.isNotBlank() && (rollos == null || rollos <= 0)) {
+                    "Ingresá un número mayor a cero"
+                } else {
+                    null
+                },
+                keyboardType = KeyboardType.Number,
+            )
+
+            CampoFormulario(
+                value = hojasTexto,
+                onValueChange = { hojasTexto = it },
+                label = "Hojas por rollo",
+                isError = hojasTexto.isNotBlank() && (hojas == null || hojas <= 0),
+                supportingText = if (hojasTexto.isNotBlank() && (hojas == null || hojas <= 0)) {
+                    "Ingresá un número mayor a cero"
+                } else {
+                    null
+                },
+                keyboardType = KeyboardType.Number,
+            )
+
+            Spacer(Modifier.height(Spacing.xs))
+
+            BotonPrincipal(
+                texto = "Guardar",
+                enabled = desglose != null,
+                onClick = {
+                    if (precio != null && rollos != null && hojas != null && desglose != null) {
+                        onGuardar(marca, precio, rollos, hojas)
+                        marca = ""
+                        precioTexto = ""
+                        rollosTexto = ""
+                        hojasTexto = ""
+                    }
+                },
+            )
+
+            Spacer(Modifier.height(Spacing.sm))
         }
     }
 }
 
-/** Encabezado de bloque: texto corto, en oración normal, nunca en mayúsculas. */
+/** Las otras dos métricas, en dos columnas sobre el panel teal. */
 @Composable
-internal fun SectionLabel(texto: String, modifier: Modifier = Modifier) {
-    Text(
-        text = texto,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier,
-    )
+private fun ResumenPanel(desglose: PaperPriceBreakdown?, modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.weight(1f)) {
+            EtiquetaPanel("Por rollo")
+            Text(
+                text = desglose?.let { formatoMoneda(it.precioPorRollo) } ?: "—",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+            )
+        }
+        Column(Modifier.weight(1f)) {
+            EtiquetaPanel("Por 100 hojas")
+            Text(
+                text = desglose?.let { formatoMoneda(it.precioPor100Hojas) } ?: "—",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+            )
+        }
+    }
+}
+
+/** Botón teal en forma de píldora, como los de la referencia. */
+@Composable
+internal fun BotonPrincipal(
+    texto: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = CircleShape,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = Spacing.md),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(texto, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Tarjeta blanca con esquinas generosas y sombra apenas perceptible. */
+@Composable
+internal fun TarjetaSuave(
+    modifier: Modifier = Modifier,
+    contenido: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        contenido()
+    }
 }
 
 /**
- * Fila etiqueta / valor reutilizada por las tres pantallas: la etiqueta en gris a
- * la izquierda, el valor alineado a la derecha. `destacado` lo pasa a negrita, sin
- * cambiar de familia tipográfica.
+ * Fila etiqueta / valor reutilizada por las tres pantallas: etiqueta en gris a la
+ * izquierda, valor alineado a la derecha.
  */
 @Composable
 internal fun MetricRow(
@@ -237,18 +241,13 @@ internal fun MetricRow(
             } else {
                 MaterialTheme.typography.bodyLarge
             },
-            fontWeight = if (destacado) FontWeight.Bold else FontWeight.Normal,
             color = valorColor,
             textAlign = TextAlign.End,
         )
     }
 }
 
-/**
- * `OutlinedTextField` de Material 3 con los parámetros que repiten las dos
- * pantallas con formulario. Sin personalización de colores ni de forma: el campo
- * se ve como en cualquier otra app Android.
- */
+/** Campo de texto redondeado, sin el borde duro del outlined por defecto. */
 @Composable
 internal fun CampoFormulario(
     value: String,
@@ -267,6 +266,13 @@ internal fun CampoFormulario(
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        shape = MaterialTheme.shapes.small,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        ),
         modifier = modifier.fillMaxWidth(),
     )
 }
