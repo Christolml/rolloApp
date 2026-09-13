@@ -1,26 +1,21 @@
 package com.rolloapp.app.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +34,9 @@ import com.rolloapp.app.ui.theme.Spacing
  * Detalle de una entrada del historial y simulador: permite ver cuánto costaría
  * un rollo (y el paquete completo) si trajera otra cantidad de hojas, para poder
  * compararlo de forma justa contra otra marca.
+ *
+ * Acá viven todas las métricas que la lista de comparación deja fuera para
+ * mantenerse compacta: precio del paquete, por rollo y por 100 hojas.
  */
 @Composable
 fun EntryDetailScreen(
@@ -82,25 +80,26 @@ fun EntryDetailScreen(
             style = MaterialTheme.typography.headlineSmall,
         )
         if (entrada.esSimulado) {
-            Text(
-                text = "Entrada simulada",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.tertiary,
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    text = "Simulado",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
+                )
+            }
         }
 
-        OutlinedCard(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
-        ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 SectionLabel("Paquete")
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider()
                 MetricRow("Precio del paquete", formatoMonedaCorta(entrada.precio))
                 MetricRow("Rollos por paquete", entrada.rollosPorPaquete.toString())
                 MetricRow("Hojas por rollo", entrada.hojasPorRollo.toString())
@@ -108,7 +107,7 @@ fun EntryDetailScreen(
 
                 Spacer(Modifier.height(Spacing.xs))
                 SectionLabel("Precios unitarios")
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider()
                 MetricRow("Precio por rollo", formatoMoneda(entrada.precioPorRollo))
                 MetricRow(
                     etiqueta = "Precio por hoja",
@@ -131,7 +130,7 @@ fun EntryDetailScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        InstrumentField(
+        CampoFormulario(
             value = hojasTexto,
             onValueChange = { hojasTexto = it },
             label = "Hojas hipotéticas por rollo",
@@ -142,58 +141,52 @@ fun EntryDetailScreen(
                 null
             },
             keyboardType = KeyboardType.Number,
-            monoValue = true,
         )
 
-        // Lo hipotético se marca con la franja Violeta, no tiñendo el panel:
-        // mismo mecanismo que la franja Fósforo del mejor precio en "Comparar".
-        OutlinedCard(
+        // Lo hipotético se distingue con `tertiaryContainer`: el rol que Material
+        // 3 reserva justamente para un bloque que hay que leer aparte del resto.
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             ),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+            Column(
+                modifier = Modifier.padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(3.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.tertiary),
-                )
-                Column(
-                    modifier = Modifier.padding(Spacing.lg),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    if (simulacion == null) {
-                        Text(
-                            text = "Ingresá una cantidad de hojas para ver la simulación.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        SectionLabel("Con ${simulacion.hojasHipoteticas} hojas por rollo")
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        MetricRow(
-                            etiqueta = "Precio por rollo simulado",
-                            valor = formatoMoneda(simulacion.precioPorRolloSimulado),
-                        )
-                        MetricRow(
-                            etiqueta = "Precio del paquete simulado",
-                            valor = formatoMonedaCorta(simulacion.precioPaqueteSimulado),
-                            destacado = true,
-                            valorColor = MaterialTheme.colorScheme.tertiary,
-                        )
-                        Text(
-                            text = "El precio por hoja no cambia: " +
-                                "${formatoMoneda(entrada.precioPorHoja)} por hoja.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                if (simulacion == null) {
+                    Text(
+                        text = "Ingresá una cantidad de hojas para ver la simulación.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else {
+                    Text(
+                        text = "Con ${simulacion.hojasHipoteticas} hojas por rollo",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.3f),
+                    )
+                    MetricRow(
+                        etiqueta = "Precio por rollo simulado",
+                        valor = formatoMoneda(simulacion.precioPorRolloSimulado),
+                        valorColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        etiquetaColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    MetricRow(
+                        etiqueta = "Precio del paquete simulado",
+                        valor = formatoMonedaCorta(simulacion.precioPaqueteSimulado),
+                        destacado = true,
+                        valorColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        etiquetaColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        text = "El precio por hoja no cambia: " +
+                            "${formatoMoneda(entrada.precioPorHoja)} por hoja.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
         }
@@ -209,11 +202,6 @@ fun EntryDetailScreen(
                 hojasTexto = ""
             },
             enabled = simulacion != null,
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onTertiary,
-            ),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Guardar simulación como nueva entrada")

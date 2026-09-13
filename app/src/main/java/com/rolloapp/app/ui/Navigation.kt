@@ -1,33 +1,26 @@
 package com.rolloapp.app.ui
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -76,75 +69,47 @@ fun RolloNavHost(
     Scaffold(
         modifier = modifier,
         topBar = {
-            // Sin sombra ni tinte tonal al scrollear: el chasis se separa del
-            // contenido con una línea de 1dp, igual que el resto de la app.
-            Column {
-                TopAppBar(
-                    title = {
-                        Text(
-                            when (rutaActual) {
-                                Rutas.AGREGAR -> "Agregar paquete"
-                                Rutas.COMPARAR -> "Comparar"
-                                else -> "Detalle"
-                            },
-                        )
-                    },
-                    navigationIcon = {
-                        if (!esSeccionPrincipal) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Volver",
-                                )
-                            }
+            // Defaults de M3 sin overrides: así el tinte al scrollear y el
+            // comportamiento con color dinámico son los que espera el sistema.
+            TopAppBar(
+                title = {
+                    Text(
+                        when (rutaActual) {
+                            Rutas.AGREGAR -> "Agregar paquete"
+                            Rutas.COMPARAR -> "Comparar"
+                            else -> "Detalle"
+                        },
+                    )
+                },
+                navigationIcon = {
+                    if (!esSeccionPrincipal) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver",
+                            )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                )
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
-            }
+                    }
+                },
+            )
         },
         bottomBar = {
             if (esSeccionPrincipal) {
-                Column {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    )
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp,
-                    ) {
-                        secciones.forEach { seccion ->
-                            NavigationBarItem(
-                                selected = rutaActual == seccion.ruta,
-                                onClick = {
-                                    if (rutaActual != seccion.ruta) {
-                                        navController.navigate(seccion.ruta) {
-                                            popUpTo(Rutas.AGREGAR) { inclusive = false }
-                                            launchSingleTop = true
-                                        }
+                NavigationBar {
+                    secciones.forEach { seccion ->
+                        NavigationBarItem(
+                            selected = rutaActual == seccion.ruta,
+                            onClick = {
+                                if (rutaActual != seccion.ruta) {
+                                    navController.navigate(seccion.ruta) {
+                                        popUpTo(Rutas.AGREGAR) { inclusive = false }
+                                        launchSingleTop = true
                                     }
-                                },
-                                icon = { Icon(seccion.icono, contentDescription = seccion.titulo) },
-                                label = { Text(seccion.titulo) },
-                                // Sin el óvalo relleno del default: la selección
-                                // se comunica sólo con color de ícono y label.
-                                colors = NavigationBarItemDefaults.colors(
-                                    indicatorColor = Color.Transparent,
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            )
-                        }
+                                }
+                            },
+                            icon = { Icon(seccion.icono, contentDescription = seccion.titulo) },
+                            label = { Text(seccion.titulo) },
+                        )
                     }
                 }
             }

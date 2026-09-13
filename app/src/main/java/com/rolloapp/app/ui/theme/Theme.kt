@@ -1,128 +1,144 @@
 package com.rolloapp.app.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 /**
- * Los dos esquemas declaran **toda** la familia de roles a propósito.
- *
- * `darkColorScheme()` / `lightColorScheme()` rellenan con el violeta de Material
- * Baseline cualquier slot que no se les pase, y esos slots se filtran por la
- * puerta de atrás: `surfaceContainer*` en cada `Card`, `inverse*` en el
- * `Snackbar`. Completarlos es lo que mantiene la identidad en toda la app.
- *
- * Regla simétrica del contenido sobre acento: en oscuro los acentos son Glow
- * (claros) y encima va Grafito; en claro son Ink (oscuros) y encima va blanco.
+ * Esquemas de respaldo. Se declaran **todos** los roles a mano, incluida la rampa
+ * `surfaceContainer*`: `lightColorScheme()` / `darkColorScheme()` rellenan con el
+ * violeta de Material Baseline cualquier slot que no se les pase, y esos slots
+ * entran por la puerta de atrás (el fondo de cada `Card`, el `AlertDialog`, la
+ * `NavigationBar`, el `Snackbar`). Dejarlos sin definir es lo que produce esas
+ * manchas violetas que no pertenecen a la paleta.
  */
-private val EsquemaOscuro = darkColorScheme(
-    primary = FosforoGlow,
-    onPrimary = Grafito,
-    primaryContainer = FosforoContainerDark,
-    onPrimaryContainer = OnFosforoContainerDark,
-    inversePrimary = FosforoInk,
+private val EsquemaClaro = lightColorScheme(
+    primary = PrimaryClaro,
+    onPrimary = OnPrimaryClaro,
+    primaryContainer = PrimaryContainerClaro,
+    onPrimaryContainer = OnPrimaryContainerClaro,
+    inversePrimary = PrimaryOscuro,
 
-    secondary = OnSurfaceVariantDark,
-    onSecondary = Grafito,
-    secondaryContainer = SurfaceDarkContainerHigh,
-    onSecondaryContainer = OnSurfaceDark,
+    secondary = SecondaryClaro,
+    onSecondary = OnSecondaryClaro,
+    secondaryContainer = SecondaryContainerClaro,
+    onSecondaryContainer = OnSecondaryContainerClaro,
 
-    tertiary = VioletaGlow,
-    onTertiary = Grafito,
-    tertiaryContainer = VioletaContainerDark,
-    onTertiaryContainer = OnVioletaContainerDark,
+    tertiary = TertiaryClaro,
+    onTertiary = OnTertiaryClaro,
+    tertiaryContainer = TertiaryContainerClaro,
+    onTertiaryContainer = OnTertiaryContainerClaro,
 
-    error = AlertaGlow,
-    onError = Grafito,
-    errorContainer = AlertaContainerDark,
-    onErrorContainer = OnAlertaContainerDark,
+    error = ErrorClaro,
+    onError = OnErrorClaro,
+    errorContainer = ErrorContainerClaro,
+    onErrorContainer = OnErrorContainerClaro,
 
-    background = Grafito,
-    onBackground = OnSurfaceDark,
-    surface = Grafito,
-    onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceDarkContainerHigh,
-    onSurfaceVariant = OnSurfaceVariantDark,
-    surfaceDim = SurfaceDarkDim,
-    surfaceBright = SurfaceDarkBright,
-    surfaceContainerLowest = SurfaceDarkLowest,
-    surfaceContainerLow = SurfaceDarkLow,
-    surfaceContainer = SurfaceDarkContainer,
-    surfaceContainerHigh = SurfaceDarkContainerHigh,
-    surfaceContainerHighest = SurfaceDarkContainerHighest,
-    // Sin sombras ni tinte tonal: el tinte iguala a la superficie, así elevar
-    // un contenedor no lo tiñe de verde.
-    surfaceTint = Grafito,
+    background = BackgroundClaro,
+    onBackground = OnBackgroundClaro,
+    surface = SurfaceClaro,
+    onSurface = OnSurfaceClaro,
+    surfaceVariant = SurfaceVariantClaro,
+    onSurfaceVariant = OnSurfaceVariantClaro,
+    surfaceTint = PrimaryClaro,
+    surfaceDim = SurfaceDimClaro,
+    surfaceBright = SurfaceBrightClaro,
+    surfaceContainerLowest = SurfaceContainerLowestClaro,
+    surfaceContainerLow = SurfaceContainerLowClaro,
+    surfaceContainer = SurfaceContainerClaro,
+    surfaceContainerHigh = SurfaceContainerHighClaro,
+    surfaceContainerHighest = SurfaceContainerHighestClaro,
 
-    inverseSurface = Bruma,
-    inverseOnSurface = Grafito,
+    inverseSurface = InverseSurfaceClaro,
+    inverseOnSurface = InverseOnSurfaceClaro,
 
-    outline = LineaDark,
-    outlineVariant = LineaDark,
+    outline = OutlineClaro,
+    outlineVariant = OutlineVariantClaro,
     scrim = Color.Black,
 )
 
-private val EsquemaClaro = lightColorScheme(
-    primary = FosforoInk,
-    onPrimary = Color.White,
-    primaryContainer = FosforoContainerLight,
-    onPrimaryContainer = OnFosforoContainerLight,
-    inversePrimary = FosforoGlow,
+private val EsquemaOscuro = darkColorScheme(
+    primary = PrimaryOscuro,
+    onPrimary = OnPrimaryOscuro,
+    primaryContainer = PrimaryContainerOscuro,
+    onPrimaryContainer = OnPrimaryContainerOscuro,
+    inversePrimary = PrimaryClaro,
 
-    secondary = OnSurfaceVariantLight,
-    onSecondary = Color.White,
-    secondaryContainer = SurfaceLightContainerHigh,
-    onSecondaryContainer = OnSurfaceLight,
+    secondary = SecondaryOscuro,
+    onSecondary = OnSecondaryOscuro,
+    secondaryContainer = SecondaryContainerOscuro,
+    onSecondaryContainer = OnSecondaryContainerOscuro,
 
-    tertiary = VioletaInk,
-    onTertiary = Color.White,
-    tertiaryContainer = VioletaContainerLight,
-    onTertiaryContainer = OnVioletaContainerLight,
+    tertiary = TertiaryOscuro,
+    onTertiary = OnTertiaryOscuro,
+    tertiaryContainer = TertiaryContainerOscuro,
+    onTertiaryContainer = OnTertiaryContainerOscuro,
 
-    error = AlertaInk,
-    onError = Color.White,
-    errorContainer = AlertaContainerLight,
-    onErrorContainer = OnAlertaContainerLight,
+    error = ErrorOscuro,
+    onError = OnErrorOscuro,
+    errorContainer = ErrorContainerOscuro,
+    onErrorContainer = OnErrorContainerOscuro,
 
-    background = Bruma,
-    onBackground = OnSurfaceLight,
-    surface = Bruma,
-    onSurface = OnSurfaceLight,
-    surfaceVariant = SurfaceLightContainerHigh,
-    onSurfaceVariant = OnSurfaceVariantLight,
-    surfaceDim = SurfaceLightDim,
-    surfaceBright = SurfaceLightBright,
-    surfaceContainerLowest = SurfaceLightLowest,
-    surfaceContainerLow = SurfaceLightLow,
-    surfaceContainer = SurfaceLightContainer,
-    surfaceContainerHigh = SurfaceLightContainerHigh,
-    surfaceContainerHighest = SurfaceLightContainerHighest,
-    surfaceTint = Bruma,
+    background = BackgroundOscuro,
+    onBackground = OnBackgroundOscuro,
+    surface = SurfaceOscuro,
+    onSurface = OnSurfaceOscuro,
+    surfaceVariant = SurfaceVariantOscuro,
+    onSurfaceVariant = OnSurfaceVariantOscuro,
+    surfaceTint = PrimaryOscuro,
+    surfaceDim = SurfaceDimOscuro,
+    surfaceBright = SurfaceBrightOscuro,
+    surfaceContainerLowest = SurfaceContainerLowestOscuro,
+    surfaceContainerLow = SurfaceContainerLowOscuro,
+    surfaceContainer = SurfaceContainerOscuro,
+    surfaceContainerHigh = SurfaceContainerHighOscuro,
+    surfaceContainerHighest = SurfaceContainerHighestOscuro,
 
-    inverseSurface = SurfaceDarkContainerHigh,
-    inverseOnSurface = OnSurfaceDark,
+    inverseSurface = InverseSurfaceOscuro,
+    inverseOnSurface = InverseOnSurfaceOscuro,
 
-    outline = LineaLight,
-    outlineVariant = LineaLight,
+    outline = OutlineOscuro,
+    outlineVariant = OutlineVariantOscuro,
     scrim = Color.Black,
 )
 
 /**
- * Sin color dinámico: la identidad de la app no depende del wallpaper del
- * usuario. El instrumento se ve igual en todos los teléfonos.
+ * Material You por default: en Android 12+ el sistema arma la paleta a partir del
+ * wallpaper del usuario, así que la app se ve integrada con el resto del teléfono
+ * sin que ninguna elección de color hecha a mano pueda desentonar.
+ *
+ * En Android 11 o anterior —o si se pasa `dynamicColor = false`, útil para
+ * previews— se usan los esquemas teal de [Color.kt].
+ *
+ * `shapes` no se pasa: las esquinas redondeadas del default de Material 3
+ * (4/8/12/16/28dp) son exactamente las que se buscan.
  */
 @Composable
 fun RolloAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+
+        darkTheme -> EsquemaOscuro
+        else -> EsquemaClaro
+    }
+
     MaterialTheme(
-        colorScheme = if (darkTheme) EsquemaOscuro else EsquemaClaro,
+        colorScheme = colorScheme,
         typography = RolloTypography,
-        shapes = RolloShapes,
         content = content,
     )
 }

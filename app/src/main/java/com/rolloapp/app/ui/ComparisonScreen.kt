@@ -2,52 +2,50 @@ package com.rolloapp.app.ui
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.rolloapp.app.ui.theme.RolloNumbers
 import com.rolloapp.app.ui.theme.Spacing
 
 /**
- * Ranking real: el historial ya llega ordenado por precio por hoja ascendente,
- * así que la posición 01 es la opción más conveniente y los marcadores numéricos
- * están justificados. La franja Fósforo del borde izquierdo marca esa primera
- * posición sin teñir la card entera.
+ * Historial ordenado por precio por hoja ascendente: la primera fila es siempre
+ * la opción más conveniente y lleva el badge "Mejor precio".
+ *
+ * Cada fila muestra el desglose completo (precio por rollo, por hoja y por 100
+ * hojas), igual que la versión original — solo con menos padding para que
+ * entren varias tarjetas por pantalla sin perder ningún dato.
  */
 @Composable
 fun ComparisonScreen(
@@ -61,27 +59,24 @@ fun ComparisonScreen(
         return
     }
 
-    // Los extremos del rango se calculan una sola vez para toda la lista, no por
-    // fila: la escala tiene que ser la misma para que comparar tenga sentido.
-    val minPrecioPorHoja = remember(entradas) { entradas.minOfOrNull { it.precioPorHoja } ?: 0.0 }
-    val maxPrecioPorHoja = remember(entradas) { entradas.maxOfOrNull { it.precioPorHoja } ?: 0.0 }
+    // Borrar es destructivo y no hay deshacer, así que siempre pasa por un
+    // diálogo. El estado vive acá y no en cada fila: una fila puede salir de
+    // composición (scroll, reordenamiento) justo cuando el diálogo está abierto.
+    var entradaAEliminar by remember { mutableStateOf<PaperEntryUi?>(null) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         itemsIndexed(items = entradas, key = { _, entrada -> entrada.id }) { indice, entrada ->
-            DismissableEntry(
+            EntryCard(
                 entrada = entrada,
-                posicion = indice + 1,
                 esMejorOpcion = indice == 0,
-                minPrecioPorHoja = minPrecioPorHoja,
-                maxPrecioPorHoja = maxPrecioPorHoja,
-                onSeleccionar = { onSeleccionar(entrada) },
-                onEliminar = { onEliminar(entrada) },
-                // Única animación de la app: cuando entra un paquete más barato,
-                // las filas existentes se reacomodan en vez de saltar.
+                onClick = { onSeleccionar(entrada) },
+                onEliminarClick = { entradaAEliminar = entrada },
+                // Cuando entra un paquete más barato, las filas existentes se
+                // reacomodan en vez de saltar.
                 modifier = Modifier.animateItem(
                     placementSpec = spring(
                         dampingRatio = Spring.DampingRatioNoBouncy,
@@ -91,150 +86,117 @@ fun ComparisonScreen(
             )
         }
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DismissableEntry(
-    entrada: PaperEntryUi,
-    posicion: Int,
-    esMejorOpcion: Boolean,
-    minPrecioPorHoja: Double,
-    maxPrecioPorHoja: Double,
-    onSeleccionar: () -> Unit,
-    onEliminar: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { valor ->
-            if (valor == SwipeToDismissBoxValue.StartToEnd || valor == SwipeToDismissBoxValue.EndToStart) {
-                onEliminar()
-                true
-            } else {
-                false
-            }
-        },
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = MaterialTheme.colorScheme.error,
-                        // Mismo shape que la card de contenido: si difieren se ve
-                        // una costura durante el gesto.
-                        shape = MaterialTheme.shapes.medium,
-                    )
-                    .padding(horizontal = Spacing.xl),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.onError,
-                )
-            }
-        },
-    ) {
-        EntryCard(
-            entrada = entrada,
-            posicion = posicion,
-            esMejorOpcion = esMejorOpcion,
-            minPrecioPorHoja = minPrecioPorHoja,
-            maxPrecioPorHoja = maxPrecioPorHoja,
-            onClick = onSeleccionar,
+    entradaAEliminar?.let { objetivo ->
+        AlertDialog(
+            onDismissRequest = { entradaAEliminar = null },
+            title = { Text("¿Eliminar ${objetivo.marca}?") },
+            text = { Text("Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onEliminar(objetivo)
+                        entradaAEliminar = null
+                    },
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { entradaAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            },
         )
     }
 }
 
+/**
+ * Fila con el desglose completo: marca + badges arriba, composición del
+ * paquete debajo, y las 3 métricas unitarias (precio por rollo, por hoja y
+ * por 100 hojas) — la misma información que la primera versión, con padding
+ * más ajustado para que quepan varias tarjetas por pantalla.
+ */
 @Composable
 private fun EntryCard(
     entrada: PaperEntryUi,
-    posicion: Int,
     esMejorOpcion: Boolean,
-    minPrecioPorHoja: Double,
-    maxPrecioPorHoja: Double,
     onClick: () -> Unit,
+    onEliminarClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val acento = if (esMejorOpcion) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    OutlinedCard(
+    Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+                .padding(
+                    start = Spacing.md,
+                    end = Spacing.xs,
+                    top = Spacing.md,
+                    bottom = Spacing.md,
+                )
                 .then(
                     if (esMejorOpcion) {
                         Modifier.semantics {
-                            contentDescription = "Mejor opción: ${entrada.marca}"
+                            contentDescription = "Mejor precio: ${entrada.marca}"
                         }
                     } else {
                         Modifier
                     },
                 ),
+            verticalAlignment = Alignment.Top,
         ) {
-            // La franja reemplaza a la card entera pintada: marca la posición 01
-            // sin gritar ni romper la jerarquía de color del resto del contenido.
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .fillMaxHeight()
-                    .background(if (esMejorOpcion) acento else Color.Transparent),
-            )
-
             Column(
-                modifier = Modifier.padding(Spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
                     Text(
-                        text = posicion.toString().padStart(2, '0'),
-                        style = RolloNumbers.rankIndex,
-                        color = acento,
-                    )
-                    Text(
                         text = entrada.marca,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    if (esMejorOpcion) {
+                        Etiqueta(
+                            texto = "Mejor precio",
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                     if (entrada.esSimulado) {
-                        EtiquetaBorde(
+                        Etiqueta(
                             texto = "Simulado",
-                            color = MaterialTheme.colorScheme.tertiary,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                     }
                 }
 
-                MagnitudeScale(
-                    value = entrada.precioPorHoja,
-                    min = minPrecioPorHoja,
-                    max = maxPrecioPorHoja,
-                    highlighted = esMejorOpcion,
+                Text(
+                    text = "${formatoMonedaCorta(entrada.precio)} · " +
+                        "${entrada.rollosPorPaquete} rollos · " +
+                        "${entrada.hojasPorRollo} hojas c/u",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
 
+                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+
+                MetricRow(
+                    etiqueta = "Precio por rollo",
+                    valor = formatoMoneda(entrada.precioPorRollo),
+                )
                 MetricRow(
                     etiqueta = "Precio por hoja",
                     valor = formatoMoneda(entrada.precioPorHoja),
@@ -245,39 +207,42 @@ private fun EntryCard(
                         MaterialTheme.colorScheme.onSurface
                     },
                 )
-                MetricRow("Precio por 100 hojas", formatoMoneda(entrada.precioPor100Hojas))
-                MetricRow("Precio por rollo", formatoMoneda(entrada.precioPorRollo))
+                MetricRow(
+                    etiqueta = "Precio por 100 hojas",
+                    valor = formatoMoneda(entrada.precioPor100Hojas),
+                )
+            }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                MetricRow("Precio del paquete", formatoMonedaCorta(entrada.precio))
-                MetricRow("Rollos por paquete", entrada.rollosPorPaquete.toString())
-                MetricRow("Hojas por rollo", entrada.hojasPorRollo.toString())
+            IconButton(onClick = onEliminarClick) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Eliminar ${entrada.marca}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }
 }
 
-/**
- * Etiqueta con borde, no píldora rellena: informa una condición de la entrada
- * sin competir en peso visual con los valores numéricos.
- */
+/** Badge chico y legible: el rol semántico de M3 puesto tal cual, con texto. */
 @Composable
-private fun EtiquetaBorde(
+private fun Etiqueta(
     texto: String,
     color: Color,
+    contentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
-        color = Color.Transparent,
-        contentColor = color,
-        border = BorderStroke(1.dp, color),
-        shape = MaterialTheme.shapes.extraSmall,
+        color = color,
+        contentColor = contentColor,
+        shape = MaterialTheme.shapes.small,
     ) {
         Text(
             text = texto,
             style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
             modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp),
         )
     }
