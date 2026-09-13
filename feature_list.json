@@ -95,6 +95,30 @@
       "dependencies": ["feat-010"],
       "status": "done",
       "evidence": "./gradlew testDebugUnitTest -> 20 tests, 0 fallos; assembleDebug -> APK 11.4 MB; :app:lintDebug -> 0 errores. Probado a mano en SM_S918U1 (2026-09-13) en modo oscuro y claro, con capturas revisadas de las tres pantallas: en 'Comparar' entran 3 tarjetas completas con el desglose de 3 métricas sin scrollear."
+    },
+    {
+      "id": "feat-013",
+      "name": "Separar la app Android en android/",
+      "description": "El proyecto Gradle deja la raíz del repo y pasa a android/ (git mv, historial intacto), para que la raíz quede para el harness y las dos versiones de la app. Se actualizan .gitignore y CLAUDE.md con las rutas nuevas.",
+      "dependencies": ["feat-012"],
+      "status": "done",
+      "evidence": "Desde android/: ./gradlew testDebugUnitTest assembleDebug -> BUILD SUCCESSFUL, 20 tests verdes. Gradle no necesitó ningún cambio de configuración: el wrapper y settings.gradle.kts viajaron juntos."
+    },
+    {
+      "id": "feat-014",
+      "name": "Versión PWA en pwa/",
+      "description": "Port web de la app: HTML/CSS/JS puro sin build step, misma identidad visual (panel teal, tarjetas, chips, Poppins) y las mismas tres pantallas. calculator.js y format.js son un port 1:1 de PaperPriceCalculator.kt y Formatting.kt; el historial vive en localStorage. Incluye manifest, service worker con caché del app shell y los íconos de marca.",
+      "dependencies": ["feat-013"],
+      "status": "done",
+      "evidence": "node --test pwa/js/calculator.test.mjs -> 10 tests, 0 fallos, replicando los casos de los tests de Kotlin (incluido el caso de formato $0.8789 / $87.89). Las tres pantallas verificadas con capturas en Chrome headless sobre datos sembrados: el orden por precio por hoja, los badges 'Mejor precio' y 'Simulado', el desglose completo y el detalle con el simulador dan exactamente los mismos números que la app Android."
+    },
+    {
+      "id": "feat-015",
+      "name": "Despliegue en GitHub Pages",
+      "description": "Repo público Christolml/rolloApp y workflow .github/workflows/pages.yml que corre los tests del port y publica solo la carpeta pwa/ en cada push a main que la toque.",
+      "dependencies": ["feat-014"],
+      "status": "done",
+      "evidence": "https://christolml.github.io/rolloApp/ responde 200, igual que manifest, js, css, íconos y fuentes. Dos runs del workflow en verde (34764143806 y 34764467976). Tres defectos encontrados en el sitio ya publicado y corregidos: [hidden] pisado por reglas de display, banda teal sobrante bajo el contenido, e ícono de pestaña colapsado por box-sizing."
     }
   ]
 }
