@@ -18,6 +18,40 @@ const ICONO_SIMULADO =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.9l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
 const ICONO_BORRAR =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+const ICONO_CAMARA =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3L7.17 5H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2h-3.17L15 3H9zm3 15a5 5 0 110-10 5 5 0 010 10zm0-2a3 3 0 100-6 3 3 0 000 6z"/></svg>';
+
+/**
+ * Redimensiona una foto de cámara (que puede pesar varios MB) a un lado
+ * máximo de 1024px y la recomprime a JPEG calidad 0.8 antes de guardarla —
+ * mismo criterio que `AlmacenFotos` en la app Android, para no llenar
+ * `localStorage` con fotos a resolución completa.
+ *
+ * `imageOrientation: 'from-image'` hace que `createImageBitmap` corrija la
+ * orientación EXIF (fotos sacadas en vertical no quedan rotadas). Si el
+ * navegador no soporta esa opción, se reintenta sin ella antes de fallar.
+ */
+async function redimensionarImagen(archivo) {
+  const ladoMaximo = 1024;
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(archivo, { imageOrientation: 'from-image' });
+  } catch {
+    bitmap = await createImageBitmap(archivo);
+  }
+  try {
+    const escala = Math.min(1, ladoMaximo / Math.max(bitmap.width, bitmap.height));
+    const ancho = Math.round(bitmap.width * escala);
+    const alto = Math.round(bitmap.height * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = ancho;
+    canvas.height = alto;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, ancho, alto);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } finally {
+    bitmap.close?.();
+  }
+}
 
 function escapar(texto) {
   return String(texto).replace(
@@ -70,9 +104,16 @@ function vistaAgregar() {
     <h2 class="seccion">Datos del paquete</h2>
     <form id="form-paquete" novalidate>
       <div class="tarjeta tarjeta--amplia" style="display:grid;gap:12px">
-        <label class="campo"><span>Marca</span>
-          <input id="marca" type="text" autocomplete="off" enterkeyhint="next" />
-        </label>
+        <div class="fila-foto">
+          <button type="button" class="foto-selector" id="foto-selector" aria-label="Tomar foto">
+            <img id="foto-preview" alt="" hidden />
+            <span class="foto-selector__icono" id="foto-icono">${ICONO_CAMARA}</span>
+          </button>
+          <label class="campo" style="flex:1"><span>Marca</span>
+            <input id="marca" type="text" autocomplete="off" enterkeyhint="next" />
+          </label>
+        </div>
+        <input type="file" id="foto-input" accept="image/*" capture="environment" hidden />
         <label class="campo" id="campo-precio"><span>Precio del paquete</span>
           <input id="precio" type="text" inputmode="decimal" enterkeyhint="next" />
         </label>
@@ -96,6 +137,45 @@ function vistaAgregar() {
     hojas: document.getElementById('hojas'),
   };
   const guardar = document.getElementById('guardar');
+
+  let foto = null;
+  const fotoInput = document.getElementById('foto-input');
+  const fotoSelector = document.getElementById('foto-selector');
+  const fotoPreview = document.getElementById('foto-preview');
+  const fotoIcono = document.getElementById('foto-icono');
+
+  if (!('createImageBitmap' in window)) {
+    // Navegador muy viejo: se oculta el selector en vez de ofrecer un botón
+    // que va a fallar silenciosamente.
+    fotoSelector.hidden = true;
+  }
+
+  function actualizarPreviewFoto() {
+    if (foto) {
+      fotoPreview.src = foto;
+      fotoPreview.hidden = false;
+      fotoIcono.classList.add('foto-selector__icono--overlay');
+    } else {
+      fotoPreview.hidden = true;
+      fotoPreview.removeAttribute('src');
+      fotoIcono.classList.remove('foto-selector__icono--overlay');
+    }
+  }
+
+  fotoSelector.addEventListener('click', () => fotoInput.click());
+  fotoInput.addEventListener('change', async () => {
+    const archivo = fotoInput.files[0];
+    fotoInput.value = ''; // permite elegir la misma foto de nuevo más adelante
+    if (!archivo) return;
+    try {
+      foto = await redimensionarImagen(archivo);
+    } catch {
+      // La foto falló (formato raro, sin memoria, etc.): se sigue pudiendo
+      // guardar el paquete solo con el nombre.
+      foto = null;
+    }
+    actualizarPreviewFoto();
+  });
 
   function marcarError(idCampo, input, hayError, mensaje) {
     const contenedor = document.getElementById(idCampo);
@@ -168,8 +248,11 @@ function vistaAgregar() {
       precio,
       rollosPorPaquete: rollos,
       hojasPorRollo: hojas,
+      foto,
     });
     Object.values(campos).forEach((input) => (input.value = ''));
+    foto = null;
+    actualizarPreviewFoto();
     refrescar();
     campos.marca.focus();
     mostrarAviso('Paquete guardado');
@@ -206,7 +289,13 @@ function vistaComparar() {
       return `
         <article class="paquete" data-id="${entrada.id}" role="button" tabindex="0">
           <div class="paquete__cabecera">
-            <div class="chip-icono">${entrada.esSimulado ? ICONO_SIMULADO : ICONO_CARRITO}</div>
+            <div class="chip-icono">${
+              entrada.foto
+                ? `<img src="${entrada.foto}" alt="" />`
+                : entrada.esSimulado
+                  ? ICONO_SIMULADO
+                  : ICONO_CARRITO
+            }</div>
             <div class="paquete__datos">
               <div class="paquete__nombre">
                 <h3>${escapar(entrada.marca)}</h3>
@@ -279,7 +368,14 @@ function vistaDetalle(id) {
 
   vista.innerHTML = `
     <div class="tarjeta tarjeta--amplia">
-      <h2 class="seccion">Paquete</h2>
+      ${
+        entrada.foto
+          ? `<div class="fila-foto-detalle">
+               <img class="miniatura-detalle" src="${entrada.foto}" alt="" />
+               <h2 class="seccion" style="flex:1">Paquete</h2>
+             </div>`
+          : '<h2 class="seccion">Paquete</h2>'
+      }
       <hr />
       ${filaMetrica('Precio del paquete', formatoMonedaCorta(entrada.precio))}
       ${filaMetrica('Rollos por paquete', entrada.rollosPorPaquete)}
@@ -355,6 +451,7 @@ function vistaDetalle(id) {
       rollosPorPaquete: entrada.rollosPorPaquete,
       hojasPorRollo: simulacion.hojasHipoteticas,
       esSimulado: true,
+      foto: entrada.foto,
     });
     input.value = '';
     refrescar();

@@ -108,8 +108,8 @@ fun RolloNavHost(
         ) {
             composable(Rutas.AGREGAR) {
                 AddEntryScreen(
-                    onGuardar = { marca, precio, rollos, hojas ->
-                        viewModel.guardar(marca, precio, rollos, hojas)
+                    onGuardar = { marca, precio, rollos, hojas, fotoPath ->
+                        viewModel.guardar(marca, precio, rollos, hojas, fotoPath = fotoPath)
                         scope.launch {
                             snackbarHostState.showSnackbar("Paquete guardado")
                         }
@@ -139,13 +139,7 @@ fun RolloNavHost(
                     entrada = entradas.firstOrNull { it.id == entryId },
                     onVolver = { navController.popBackStack() },
                     onGuardarSimulacion = { entrada, hojas, precioSimulado ->
-                        viewModel.guardar(
-                            marca = "${entrada.marca} ($hojas hojas)",
-                            precio = precioSimulado,
-                            rollosPorPaquete = entrada.rollosPorPaquete,
-                            hojasPorRollo = hojas,
-                            esSimulado = true,
-                        )
+                        viewModel.guardarSimulacion(entrada, hojas, precioSimulado)
                         scope.launch {
                             snackbarHostState.showSnackbar("Simulación guardada")
                         }

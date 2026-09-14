@@ -151,13 +151,17 @@ private fun EntryCard(
     TarjetaSuave(modifier = modifier.clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(Spacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                ChipIcono(
-                    icono = if (entrada.esSimulado) {
-                        Icons.Outlined.Edit
-                    } else {
-                        Icons.Outlined.ShoppingCart
-                    },
-                )
+                if (entrada.fotoPath != null) {
+                    MiniaturaFoto(fotoPath = entrada.fotoPath, modifier = Modifier.size(40.dp))
+                } else {
+                    ChipIcono(
+                        icono = if (entrada.esSimulado) {
+                            Icons.Outlined.Edit
+                        } else {
+                            Icons.Outlined.ShoppingCart
+                        },
+                    )
+                }
                 Spacer(Modifier.size(Spacing.md))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(

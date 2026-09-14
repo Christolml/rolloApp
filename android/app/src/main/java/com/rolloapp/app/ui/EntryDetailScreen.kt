@@ -3,11 +3,13 @@ package com.rolloapp.app.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.rolloapp.app.domain.PaperPriceCalculator
 import com.rolloapp.app.ui.theme.Spacing
 
@@ -94,7 +97,17 @@ fun EntryDetailScreen(
                     modifier = Modifier.padding(Spacing.lg),
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
-                    TituloSeccion("Paquete")
+                    if (entrada.fotoPath != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        ) {
+                            MiniaturaFoto(fotoPath = entrada.fotoPath, modifier = Modifier.size(64.dp))
+                            TituloSeccion("Paquete", modifier = Modifier.weight(1f))
+                        }
+                    } else {
+                        TituloSeccion("Paquete")
+                    }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     MetricRow("Precio del paquete", formatoMonedaCorta(entrada.precio))
                     MetricRow("Rollos por paquete", entrada.rollosPorPaquete.toString())
