@@ -3,8 +3,8 @@
 ## Current State
 
 **Last Updated:** 2026-09-13
-**Active Feature:** ninguna cerrada del todo — feat-016 (foto Android) tiene
-una verificación manual pendiente (ver Blockers). feat-017 (foto PWA) cerrada.
+**Active Feature:** ninguna — feat-016 y feat-017 (foto de producto en Android
+y PWA) cerradas y probadas de punta a punta con el celular real.
 
 ## Status
 
@@ -23,17 +23,16 @@ una verificación manual pendiente (ver Blockers). feat-017 (foto PWA) cerrada.
 - [x] feat-014 — Versión PWA en `pwa/`.
 - [x] feat-015 — Publicada en https://christolml.github.io/rolloApp/
 - [x] feat-016 — Foto de producto en Android (cámara opcional, Room migrado a
-      version=2, Coil). Verificación automática completa; falta la manual con
-      la cámara real (celular bloqueado durante la sesión).
+      version=2, Coil). Probada de punta a punta con el celular desbloqueado:
+      capturar, guardar, ver en Comparar/Detalle, eliminar.
 - [x] feat-017 — Foto de producto en la PWA (`<input capture>` + canvas).
 
 ### What's Next
 
-1. **Con el celular desbloqueado**, probar a mano la cámara: tomar una foto en
-   vertical y en horizontal (corrección EXIF), cancelar una captura a mitad de
-   camino, guardar un paquete sin foto, verla en "Comparar" y en el detalle, y
-   guardar una simulación desde una entrada con foto (debe conservar su propia
-   copia al borrar la original).
+1. Probar a mano la corrección de orientación EXIF con una foto real en
+   horizontal (la prueba de hoy usó el lente tapado, así que no había nada
+   que rotar) — bajo riesgo, la lógica es la misma que ya cubre el downsampling
+   probado.
 2. feat-007: verificación manual end-to-end en el dispositivo (persistencia tras
    cerrar y reabrir la app Android) — sigue pendiente.
 3. Si alguna vez hace falta distribuir la app Android fuera del celular del
@@ -41,13 +40,16 @@ una verificación manual pendiente (ver Blockers). feat-017 (foto PWA) cerrada.
 
 ## Blockers / Risks
 
-- [ ] **feat-016 sin probar a mano**: el celular (SM_S918U1) tenía la pantalla
-      con bloqueo seguro (PIN) durante toda la sesión y `adb` no puede
-      desbloquearlo. Se instaló la APK nueva SOBRE la app ya existente (con
-      datos reales) vía `adb install -r`, y se confirmó por `logcat` que la
-      app arranca sin `FATAL EXCEPTION` ni `AndroidRuntime` — la migración de
-      Room no rompió el arranque — pero el flujo de cámara en sí (tomar foto,
-      cancelar, ver la miniatura) no se ejercitó todavía.
+- [x] ~~feat-016 sin probar a mano~~ — resuelto (2026-09-13): con el celular
+      desbloqueado se instaló la APK con `adb install -r` sobre la app ya
+      existente (con datos reales) y se probó de punta a punta: botón de
+      cámara → cámara nativa de Samsung sin pedir permisos → foto capturada
+      se ve como miniatura en "Agregar" (con overlay de retomar) → guardar →
+      se ve en "Comparar" (40dp) y en el Detalle (64dp) → eliminar borra la
+      entrada y su archivo sin crashear (confirmado por `logcat`). Único caso
+      sin cubrir: la foto de prueba salió negra (lente tapado a propósito),
+      así que la corrección de orientación EXIF en una foto horizontal real
+      queda como próximo paso de bajo riesgo, no como bloqueo.
 - [ ] **Las dos versiones pueden desviarse.** La aritmética vive duplicada en
       Kotlin y en JS. Cada una tiene sus tests con los mismos casos, pero nada
       obliga a tocar las dos: es responsabilidad de quien edite. La foto NO es
@@ -101,13 +103,13 @@ una verificación manual pendiente (ver Blockers). feat-017 (foto PWA) cerrada.
       pantallas, con datos sembrados (incluida una entrada con foto): mismos
       números que la app Android, miniatura visible en "Comparar" y detalle.
 - [x] Sitio publicado respondiendo 200 en todas sus piezas.
-- [ ] feat-016: prueba manual de la cámara en el dispositivo — pendiente.
+- [x] feat-016: prueba manual de la cámara en el dispositivo — capturas
+      revisadas en Agregar/Comparar/Detalle, más el borrado sin crash.
 - [ ] feat-007 (persistencia de la app Android tras cerrar y reabrir) pendiente.
 
 ## Notes for Next Session
 
-Arrancá leyendo `CLAUDE.md`. Si el celular está desbloqueado, lo primero es
-terminar de probar la cámara (feat-016) antes de tocar cualquier otra cosa —
+Arrancá leyendo `CLAUDE.md`. feat-016 y feat-017 ya están cerradas y probadas —
 es la parte de esta sesión que quedó sin verificar a mano. Si el usuario pide
 cambios de diseño, pedile una captura antes de adivinar: dos rediseños
 completos se descartaron por falta de esa referencia.
