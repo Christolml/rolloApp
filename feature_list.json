@@ -119,6 +119,22 @@
       "dependencies": ["feat-014"],
       "status": "done",
       "evidence": "https://christolml.github.io/rolloApp/ responde 200, igual que manifest, js, css, íconos y fuentes. Dos runs del workflow en verde (34764143806 y 34764467976). Tres defectos encontrados en el sitio ya publicado y corregidos: [hidden] pisado por reglas de display, banda teal sobrante bajo el contenido, e ícono de pestaña colapsado por box-sizing."
+    },
+    {
+      "id": "feat-016",
+      "name": "Foto de producto (Android)",
+      "description": "Cámara opcional en 'Agregar paquete' junto al campo Marca (ActivityResultContracts.TakePicture() + FileProvider, sin permiso CAMERA), guardada en filesDir/photos con downsampling a 1024px + corrección de orientación EXIF (AlmacenFotos.kt). Se muestra en 'Comparar' (MiniaturaFoto 40dp) y en el detalle (64dp). Room sube a version=2 con una Migration real (ALTER TABLE ADD COLUMN) para no perder el historial ya guardado. Las simulaciones heredan una copia física del archivo, no una referencia compartida.",
+      "dependencies": ["feat-010"],
+      "status": "done",
+      "evidence": "./gradlew testDebugUnitTest assembleDebug :app:lintDebug -> 20 tests verdes, BUILD SUCCESSFUL, 0 errores de lint. Instalado con adb install -r SOBRE la app ya existente en el SM_S918U1 (no se desinstaló antes): la app arrancó sin FATAL EXCEPTION ni AndroidRuntime en logcat, confirmando que la migración no rompió los datos ya guardados. Prueba manual de la cámara en sí (tomar foto, verla en Comparar/Detalle, cancelar captura) queda pendiente: el celular estaba con la pantalla bloqueada (PIN) durante esta sesión y no se pudo desbloquear por adb."
+    },
+    {
+      "id": "feat-017",
+      "name": "Foto de producto (PWA)",
+      "description": "input[type=file][capture=environment] junto al campo Marca abre la cámara del celular directo (sin galería). redimensionarImagen() en app.js usa createImageBitmap con imageOrientation:'from-image' (corrige EXIF) + canvas a 1024px + JPEG calidad 0.8, igual que AlmacenFotos del lado Android. El resultado (data URL) se guarda como campo 'foto' en el mismo JSON de localStorage — sin IndexedDB, storage.js sigue síncrono. Se muestra en el chip de 'Comparar' y como miniatura de 64px en el detalle. Las simulaciones heredan una copia del string.",
+      "dependencies": ["feat-015"],
+      "status": "done",
+      "evidence": "Sintaxis verificada (node --check) en app.js y storage.js. Verificado visualmente con Chrome headless sobre datos sembrados en localStorage: el selector de foto se ve correctamente junto a 'Marca' en Agregar, la miniatura roja de prueba se pinta en el chip de 'Comparar' (y el ícono genérico en las entradas sin foto), y la miniatura de 64px aparece junto a 'Paquete' en el Detalle."
     }
   ]
 }

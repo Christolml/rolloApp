@@ -1,6 +1,7 @@
 package com.rolloapp.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -24,12 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.rolloapp.app.ui.theme.Spacing
 import com.rolloapp.app.ui.theme.Teal
 import com.rolloapp.app.ui.theme.TealOscuro
+import java.io.File
 
 /**
  * Encabezado de la referencia: un bloque teal que llega hasta el borde superior
@@ -133,6 +139,63 @@ fun ChipIcono(
             tint = contenido,
             modifier = Modifier.size(20.dp),
         )
+    }
+}
+
+/**
+ * Miniatura cuadrada de la foto de un paquete: la imagen si `fotoPath` no es
+ * nulo, o un ícono de cámara si todavía no hay foto.
+ *
+ * Se usa para elegir/retomar la foto en "Agregar paquete" (con `onClick`, ahí
+ * lleva un overlay que indica que es tocable) y para mostrarla de solo lectura
+ * en "Comparar" y en el detalle (sin `onClick`). El tamaño lo decide quien la
+ * usa vía `modifier.size(...)`, así sirve tanto para el chip de 40dp de las
+ * listas como para el selector más grande del formulario.
+ */
+@Composable
+fun MiniaturaFoto(
+    fotoPath: String?,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
+    val forma = RoundedCornerShape(12.dp)
+    Box(
+        modifier = modifier
+            .clip(forma)
+            .background(color = MaterialTheme.colorScheme.primaryContainer, shape = forma)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (fotoPath != null) {
+            AsyncImage(
+                model = File(fotoPath),
+                contentDescription = "Foto del paquete",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+            if (onClick != null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.PhotoCamera,
+                        contentDescription = "Volver a tomar la foto",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.PhotoCamera,
+                contentDescription = if (onClick != null) "Tomar foto" else null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(24.dp),
+            )
+        }
     }
 }
 

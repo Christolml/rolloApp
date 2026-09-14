@@ -21,6 +21,7 @@ class PaperRepository(private val dao: PaperPackageDao) {
         rollosPorPaquete: Int,
         hojasPorRollo: Int,
         esSimulado: Boolean = false,
+        fotoPath: String? = null,
     ): Long = dao.insert(
         PaperPackage(
             marca = marca,
@@ -28,6 +29,7 @@ class PaperRepository(private val dao: PaperPackageDao) {
             rollosPorPaquete = rollosPorPaquete,
             hojasPorRollo = hojasPorRollo,
             esSimulado = esSimulado,
+            fotoPath = fotoPath,
         ),
     )
 

@@ -1,5 +1,7 @@
 package com.rolloapp.app.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,17 +27,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rolloapp.app.data.AlmacenFotos
 import com.rolloapp.app.domain.PaperPriceBreakdown
 import com.rolloapp.app.domain.PaperPriceCalculator
 import com.rolloapp.app.ui.theme.Spacing
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Alta de un paquete. El panel teal de arriba muestra el precio por hoja
@@ -43,13 +53,64 @@ import com.rolloapp.app.ui.theme.Spacing
  */
 @Composable
 fun AddEntryScreen(
-    onGuardar: (marca: String, precio: Double, rollosPorPaquete: Int, hojasPorRollo: Int) -> Unit,
+    onGuardar: (
+        marca: String,
+        precio: Double,
+        rollosPorPaquete: Int,
+        hojasPorRollo: Int,
+        fotoPath: String?,
+    ) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var marca by rememberSaveable { mutableStateOf("") }
     var precioTexto by rememberSaveable { mutableStateOf("") }
     var rollosTexto by rememberSaveable { mutableStateOf("") }
     var hojasTexto by rememberSaveable { mutableStateOf("") }
+    var fotoPath by rememberSaveable { mutableStateOf<String?>(null) }
+    // Sobrevive a que el proceso muera mientras la app de cámara está en primer
+    // plano (puede pasar en dispositivos con poca memoria).
+    var archivoPendienteRuta by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val lanzadorCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+    ) { exito ->
+        val rutaPendiente = archivoPendienteRuta
+        archivoPendienteRuta = null
+        if (rutaPendiente == null) return@rememberLauncherForActivityResult
+        val archivo = File(rutaPendiente)
+        if (!exito) {
+            archivo.delete()
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val procesada = withContext(Dispatchers.IO) {
+                AlmacenFotos.downsamplearEnElLugar(archivo)
+            }
+            if (procesada) {
+                fotoPath = archivo.absolutePath
+            } else {
+                // La foto falló (0 bytes, formato inesperado, etc.): se sigue
+                // pudiendo guardar el paquete solo con el nombre.
+                archivo.delete()
+            }
+        }
+    }
+
+    fun lanzarCamara() {
+        fotoPath?.let { AlmacenFotos.borrar(it) } // "volver a tomar": descarta la anterior
+        val archivo = AlmacenFotos.crearArchivoNuevo(context)
+        archivoPendienteRuta = archivo.absolutePath
+        val uri = AlmacenFotos.uriParaArchivo(context, archivo)
+        runCatching { lanzadorCamara.launch(uri) }
+            .onFailure {
+                // No hay ninguna app de cámara instalada, o falló al resolver el intent.
+                archivoPendienteRuta = null
+                archivo.delete()
+            }
+    }
 
     val precio = precioTexto.aDoubleOrNull()
     val rollos = rollosTexto.trim().toIntOrNull()
@@ -82,11 +143,22 @@ fun AddEntryScreen(
         ) {
             TituloSeccion("Datos del paquete")
 
-            CampoFormulario(
-                value = marca,
-                onValueChange = { marca = it },
-                label = "Marca",
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MiniaturaFoto(
+                    fotoPath = fotoPath,
+                    onClick = ::lanzarCamara,
+                    modifier = Modifier.size(72.dp),
+                )
+                CampoFormulario(
+                    value = marca,
+                    onValueChange = { marca = it },
+                    label = "Marca",
+                    modifier = Modifier.weight(1f),
+                )
+            }
 
             CampoFormulario(
                 value = precioTexto,
@@ -134,11 +206,12 @@ fun AddEntryScreen(
                 enabled = desglose != null,
                 onClick = {
                     if (precio != null && rollos != null && hojas != null && desglose != null) {
-                        onGuardar(marca, precio, rollos, hojas)
+                        onGuardar(marca, precio, rollos, hojas, fotoPath)
                         marca = ""
                         precioTexto = ""
                         rollosTexto = ""
                         hojasTexto = ""
+                        fotoPath = null // el archivo ya quedó "adoptado" por la entrada guardada
                     }
                 },
             )

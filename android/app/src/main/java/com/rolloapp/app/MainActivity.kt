@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RolloAppTheme {
                 val viewModel: PaperViewModel = viewModel(
-                    factory = PaperViewModel.factory(repository),
+                    factory = PaperViewModel.factory(application, repository),
                 )
                 RolloNavHost(viewModel = viewModel)
             }

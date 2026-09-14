@@ -60,6 +60,7 @@ export function guardar({
   rollosPorPaquete,
   hojasPorRollo,
   esSimulado = false,
+  foto = null,
 }) {
   const paquetes = leerCrudo();
   paquetes.push({
@@ -70,6 +71,7 @@ export function guardar({
     hojasPorRollo,
     fecha: Date.now(),
     esSimulado,
+    foto,
   });
   return escribir(paquetes);
 }
