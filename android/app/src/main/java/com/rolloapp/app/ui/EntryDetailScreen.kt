@@ -1,5 +1,7 @@
 package com.rolloapp.app.ui
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,6 +62,16 @@ fun EntryDetailScreen(
     var hojasTexto by rememberSaveable(entrada.id) { mutableStateOf("") }
     val hojasHipoteticas = hojasTexto.trim().toIntOrNull()
 
+    // Zoom de la foto: crece "en su lugar" al tocarla, y cualquier toque en el
+    // resto de la pantalla la vuelve a su tamaño. Un tap sobre un elemento con
+    // su propio `clickable` (la foto, los botones, el campo de texto) se
+    // consume ahí y nunca llega al detector de más abajo.
+    var fotoExpandida by remember(entrada.id) { mutableStateOf(false) }
+    val tamanoFoto by animateDpAsState(
+        targetValue = if (fotoExpandida) 220.dp else 64.dp,
+        label = "tamanoFotoDetalle",
+    )
+
     val simulacion = remember(entrada.precioPorHoja, hojasHipoteticas, entrada.rollosPorPaquete) {
         hojasHipoteticas?.let {
             PaperPriceCalculator.simular(
@@ -72,7 +85,10 @@ fun EntryDetailScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .pointerInput(entrada.id) {
+                detectTapGestures(onTap = { fotoExpandida = false })
+            },
     ) {
         PanelSuperior(titulo = "Detalle", onVolver = onVolver) {
             Text(
@@ -100,10 +116,22 @@ fun EntryDetailScreen(
                     if (entrada.fotoPath != null) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                            horizontalArrangement = if (fotoExpandida) {
+                                Arrangement.Center
+                            } else {
+                                Arrangement.spacedBy(Spacing.md)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            MiniaturaFoto(fotoPath = entrada.fotoPath, modifier = Modifier.size(64.dp))
-                            TituloSeccion("Paquete", modifier = Modifier.weight(1f))
+                            MiniaturaFoto(
+                                fotoPath = entrada.fotoPath,
+                                onClick = { fotoExpandida = true },
+                                mostrarAccionCamara = false,
+                                modifier = Modifier.size(tamanoFoto),
+                            )
+                            if (!fotoExpandida) {
+                                TituloSeccion("Paquete", modifier = Modifier.weight(1f))
+                            }
                         }
                     } else {
                         TituloSeccion("Paquete")

@@ -484,6 +484,20 @@ btnVolver.addEventListener('click', () => {
   location.hash = '#/comparar';
 });
 
+// Zoom de la foto en el detalle: tocarla la agranda (o la achica si ya
+// estaba grande), tocar cualquier otra parte la achica. Un solo listener
+// delegado, así no hay que agregar/quitar nada al cambiar de pantalla o de
+// producto — si no hay miniatura en la vista actual, no hace nada.
+vista.addEventListener('click', (evento) => {
+  const miniatura = vista.querySelector('.miniatura-detalle');
+  if (!miniatura) return;
+  if (evento.target.closest('.miniatura-detalle')) {
+    miniatura.classList.toggle('miniatura-detalle--expandida');
+  } else {
+    miniatura.classList.remove('miniatura-detalle--expandida');
+  }
+});
+
 window.addEventListener('hashchange', enrutar);
 enrutar();
 
