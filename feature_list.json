@@ -135,6 +135,14 @@
       "dependencies": ["feat-015"],
       "status": "done",
       "evidence": "Sintaxis verificada (node --check) en app.js y storage.js. Verificado visualmente con Chrome headless sobre datos sembrados en localStorage: el selector de foto se ve correctamente junto a 'Marca' en Agregar, la miniatura roja de prueba se pinta en el chip de 'Comparar' (y el ícono genérico en las entradas sin foto), y la miniatura de 64px aparece junto a 'Paquete' en el Detalle."
+    },
+    {
+      "id": "feat-018",
+      "name": "Zoom de la foto en el detalle (Android + PWA)",
+      "description": "En la pantalla de detalle, tocar la foto del paquete la agranda (64dp->220dp en Android con animateDpAsState; 64px->220px en la PWA con transición CSS), y tocar cualquier otra parte de la pantalla la vuelve a su tamaño y lugar original. Android: MiniaturaFoto gana el parámetro mostrarAccionCamara (desacoplado de onClick) para no mostrar el ícono de 'retomar foto' en el detalle; el colapso usa un pointerInput/detectTapGestures a nivel de pantalla, que no interfiere con los clickable de la foto/botones/campo de texto porque Compose consume el tap en el elemento más específico primero. PWA: un solo listener delegado en el contenedor de vista (event.target.closest) que alterna la clase miniatura-detalle--expandida; CSS :has() cambia la fila a columna mientras está expandida para que el título no quede apretado.",
+      "dependencies": ["feat-016", "feat-017"],
+      "status": "done",
+      "evidence": "Android: ./gradlew testDebugUnitTest assembleDebug :app:lintDebug -> 20 tests verdes, BUILD SUCCESSFUL, 0 errores. Probado a mano en el SM_S918U1 sobre una entrada real (papel MAX) instalado con adb install -r: tocar la foto la agranda a 220dp centrada sin overlay de cámara, tocar en 'Precios unitarios' la vuelve a 64dp junto al título, el campo del simulador sigue aceptando texto con la lógica de colapso activa. PWA: verificado con Chrome headless disparando clicks programáticos (MouseEvent) sobre un iframe con datos sembrados en localStorage — capturas confirman que el click en la miniatura la lleva a 220px en columna, y un click en 'Precios unitarios' la vuelve a 64px en fila, igual que en Android."
     }
   ]
 }

@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Last Updated:** 2026-09-13
-**Active Feature:** ninguna — feat-016 y feat-017 (foto de producto en Android
-y PWA) cerradas y probadas de punta a punta con el celular real.
+**Last Updated:** 2026-09-16
+**Active Feature:** ninguna — feat-018 (zoom de la foto en el detalle) cerrada
+y probada en las dos plataformas.
 
 ## Status
 
@@ -26,6 +26,8 @@ y PWA) cerradas y probadas de punta a punta con el celular real.
       version=2, Coil). Probada de punta a punta con el celular desbloqueado:
       capturar, guardar, ver en Comparar/Detalle, eliminar.
 - [x] feat-017 — Foto de producto en la PWA (`<input capture>` + canvas).
+- [x] feat-018 — Zoom de la foto en el detalle: tocarla la agranda (220dp/px),
+      tocar afuera la vuelve a su tamaño y lugar, en Android y en la PWA.
 
 ### What's Next
 
@@ -91,6 +93,21 @@ y PWA) cerradas y probadas de punta a punta con el celular real.
   port se desvía de la versión Kotlin, no se despliega.
 - **Poppins empaquetada también en la PWA** (628 KB): que la app se vea igual
   sin conexión vale ese peso; es lo único pesado del bundle.
+- **Zoom sin diálogo ni overlay de pantalla completa**: la imagen crece "en su
+  lugar" dentro del layout existente (Android: `animateDpAsState` sobre el
+  mismo `Modifier.size`; PWA: transición CSS sobre el mismo `<img>`). Se pidió
+  así explícitamente ("vuelve a su tamaño y lugar original"), y evita la
+  complejidad de gestionar una ventana/diálogo aparte.
+- **`MiniaturaFoto` separa `onClick` de `mostrarAccionCamara`**: antes ambos
+  estaban acoplados (si tenía `onClick`, mostraba el ícono de "retomar foto").
+  Hacía falta desacoplarlos para poder darle `onClick` (zoom) en el detalle
+  sin sugerir que ahí se puede retomar la foto.
+- **Colapsar con `pointerInput`/`detectTapGestures` a nivel de pantalla
+  (Android) y un listener delegado con `closest()` (PWA)**, no un diálogo con
+  scrim: en Compose, un tap sobre un `clickable` hijo (la foto, botones, el
+  campo de texto) se consume ahí y nunca llega al detector de la pantalla, así
+  que conviven sin gestos en conflicto — confirmado a mano tipeando en el
+  campo del simulador con la lógica de colapso activa.
 
 ## Evidence of Completion
 
@@ -105,11 +122,15 @@ y PWA) cerradas y probadas de punta a punta con el celular real.
 - [x] Sitio publicado respondiendo 200 en todas sus piezas.
 - [x] feat-016: prueba manual de la cámara en el dispositivo — capturas
       revisadas en Agregar/Comparar/Detalle, más el borrado sin crash.
+- [x] feat-018: probado a mano en el SM_S918U1 sobre una entrada real (papel
+      MAX) y en la PWA con clicks programáticos vía Chrome headless — tocar
+      la foto la agranda, tocar afuera la achica, en las dos plataformas.
 - [ ] feat-007 (persistencia de la app Android tras cerrar y reabrir) pendiente.
 
 ## Notes for Next Session
 
-Arrancá leyendo `CLAUDE.md`. feat-016 y feat-017 ya están cerradas y probadas —
-es la parte de esta sesión que quedó sin verificar a mano. Si el usuario pide
-cambios de diseño, pedile una captura antes de adivinar: dos rediseños
-completos se descartaron por falta de esa referencia.
+Arrancá leyendo `CLAUDE.md`. Si el usuario pide cambios de diseño, pedile una
+captura antes de adivinar: dos rediseños completos se descartaron por falta de
+esa referencia. Para probar interacciones de la PWA sin dispositivo, el truco
+que funcionó bien: un iframe + `MouseEvent` disparado por script en vez de
+depender del protocolo de depuración completo (más simple de armar en bash).

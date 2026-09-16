@@ -434,12 +434,27 @@ hr {
   margin-bottom: 4px;
 }
 
+/* Con la foto expandida, el título pasa abajo en vez de achicarse al lado. */
+.fila-foto-detalle:has(.miniatura-detalle--expandida) {
+  flex-direction: column;
+  align-items: center;
+}
+
 .miniatura-detalle {
   flex: none;
   width: 64px;
   height: 64px;
   border-radius: 12px;
   object-fit: cover;
+  cursor: pointer;
+  transition:
+    width 0.2s ease,
+    height 0.2s ease;
+}
+
+.miniatura-detalle--expandida {
+  width: 220px;
+  height: 220px;
 }
 
 .paquete__nombre {

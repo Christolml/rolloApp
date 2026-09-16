@@ -147,16 +147,17 @@ fun ChipIcono(
  * nulo, o un ícono de cámara si todavía no hay foto.
  *
  * Se usa para elegir/retomar la foto en "Agregar paquete" (con `onClick`, ahí
- * lleva un overlay que indica que es tocable) y para mostrarla de solo lectura
- * en "Comparar" y en el detalle (sin `onClick`). El tamaño lo decide quien la
- * usa vía `modifier.size(...)`, así sirve tanto para el chip de 40dp de las
- * listas como para el selector más grande del formulario.
+ * lleva un overlay que indica que es tocable), para mostrarla de solo lectura
+ * en "Comparar" (sin `onClick`), y para hacer zoom en el detalle (con
+ * `onClick` pero `mostrarAccionCamara = false`, porque desde ahí no se puede
+ * retomar la foto). El tamaño lo decide quien la usa vía `modifier.size(...)`.
  */
 @Composable
 fun MiniaturaFoto(
     fotoPath: String?,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    mostrarAccionCamara: Boolean = onClick != null,
 ) {
     val forma = RoundedCornerShape(12.dp)
     Box(
@@ -173,7 +174,7 @@ fun MiniaturaFoto(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
             )
-            if (onClick != null) {
+            if (mostrarAccionCamara) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
