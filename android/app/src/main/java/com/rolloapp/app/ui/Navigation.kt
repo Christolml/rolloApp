@@ -33,8 +33,10 @@ import kotlinx.coroutines.launch
 object Rutas {
     const val AGREGAR = "agregar"
     const val COMPARAR = "comparar"
+    const val CAMARA = "camara"
     const val ARG_ENTRY_ID = "entryId"
     const val DETALLE = "detalle/{$ARG_ENTRY_ID}"
+    const val CLAVE_FOTO_CAPTURADA = "fotoCapturada"
 
     fun detalle(id: Long): String = "detalle/$id"
 }
@@ -106,14 +108,34 @@ fun RolloNavHost(
             startDestination = Rutas.AGREGAR,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Rutas.AGREGAR) {
+            composable(Rutas.AGREGAR) { entry ->
+                val fotoCapturadaExterna by entry.savedStateHandle
+                    .getStateFlow<String?>(Rutas.CLAVE_FOTO_CAPTURADA, null)
+                    .collectAsStateWithLifecycle()
                 AddEntryScreen(
+                    fotoCapturadaExterna = fotoCapturadaExterna,
+                    onConsumirFotoCapturada = {
+                        entry.savedStateHandle[Rutas.CLAVE_FOTO_CAPTURADA] = null
+                    },
+                    onAbrirCamara = { navController.navigate(Rutas.CAMARA) },
                     onGuardar = { marca, precio, rollos, hojas, fotoPath ->
                         viewModel.guardar(marca, precio, rollos, hojas, fotoPath = fotoPath)
                         scope.launch {
                             snackbarHostState.showSnackbar("Paquete guardado")
                         }
                     },
+                )
+            }
+
+            composable(Rutas.CAMARA) {
+                CameraCaptureScreen(
+                    onFotoCapturada = { path ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set(Rutas.CLAVE_FOTO_CAPTURADA, path)
+                        navController.popBackStack()
+                    },
+                    onCancelar = { navController.popBackStack() },
                 )
             }
 

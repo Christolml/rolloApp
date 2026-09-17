@@ -5,8 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
-import android.net.Uri
-import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -33,22 +31,20 @@ object AlmacenFotos {
 
     /**
      * Crea el `File` (todavía sin contenido) que va a recibir la foto. Llamar ANTES
-     * de lanzar el launcher de `TakePicture()` — la cámara escribe el archivo al
-     * abrir el `OutputStream` sobre la `Uri`, no hace falta que ya tenga bytes.
+     * de invocar `ImageCapture.takePicture()` — CameraX escribe el archivo directo,
+     * no hace falta que ya tenga bytes.
      */
     fun crearArchivoNuevo(context: Context): File =
         File(carpetaFotos(context), "foto_${UUID.randomUUID()}.jpg")
 
-    /** `Uri` de tipo `content://` vía FileProvider: la única que acepta la cámara del sistema. */
-    fun uriParaArchivo(context: Context, archivo: File): Uri =
-        FileProvider.getUriForFile(context, context.packageName + ".fileprovider", archivo)
-
     /**
-     * Downsamplea y comprime EN EL LUGAR la foto recién escrita por la cámara, y
+     * Downsamplea y comprime EN EL LUGAR la foto recién escrita por CameraX, y
      * corrige la orientación EXIF rotando los píxeles (no solo el tag), así el resto
-     * de la app nunca necesita volver a pensar en orientación. Devuelve `false` si
-     * el archivo no se pudo procesar (por ejemplo, la cámara no llegó a escribir
-     * nada); en ese caso el llamador debe borrar el archivo y no guardar `fotoPath`.
+     * de la app nunca necesita volver a pensar en orientación. Con `LADO_MAXIMO_PX`
+     * en 2048 esto casi nunca reduce nada (CameraX ya entrega en el tamaño pedido);
+     * queda como red de seguridad de tamaño/orientación. Devuelve `false` si el
+     * archivo no se pudo procesar (por ejemplo, la captura falló a mitad de camino);
+     * en ese caso el llamador debe borrar el archivo y no guardar `fotoPath`.
      */
     fun downsamplearEnElLugar(archivo: File): Boolean {
         if (!archivo.exists() || archivo.length() == 0L) return false

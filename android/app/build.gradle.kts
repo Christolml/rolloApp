@@ -77,5 +77,12 @@ dependencies {
     // Pintar la foto del paquete desde un File local (sin content:// para mostrarla).
     implementation(libs.coil.compose)
 
+    // Captura de fotos hablando directo al sensor (resolución y modo de calidad
+    // explícitos), en vez de delegar a la app de cámara del sistema por intent.
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+
     testImplementation(libs.junit)
 }
