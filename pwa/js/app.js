@@ -3,6 +3,7 @@
 
 import { calcular, simular } from './calculator.js';
 import { aEnteroONull, aNumeroONull, formatoMoneda, formatoMonedaCorta } from './format.js';
+import { leerFoto } from './fotos-db.js';
 import * as almacen from './storage.js';
 
 const vista = document.getElementById('vista');
@@ -23,16 +24,18 @@ const ICONO_CAMARA =
 
 /**
  * Redimensiona una foto de cámara (que puede pesar varios MB) a un lado
- * máximo de 1024px y la recomprime a JPEG calidad 0.8 antes de guardarla —
- * mismo criterio que `AlmacenFotos` en la app Android, para no llenar
- * `localStorage` con fotos a resolución completa.
+ * máximo de 2048px y la recomprime a JPEG calidad 0.92 antes de guardarla —
+ * mismo criterio que `AlmacenFotos` en la app Android: nitidez prácticamente
+ * igual a la original, en un archivo de tamaño razonable. Devuelve un `Blob`
+ * (no un data URL) para guardarlo en IndexedDB sin la inflación ~37% de
+ * codificarlo en base64.
  *
  * `imageOrientation: 'from-image'` hace que `createImageBitmap` corrija la
  * orientación EXIF (fotos sacadas en vertical no quedan rotadas). Si el
  * navegador no soporta esa opción, se reintenta sin ella antes de fallar.
  */
 async function redimensionarImagen(archivo) {
-  const ladoMaximo = 1024;
+  const ladoMaximo = 2048;
   let bitmap;
   try {
     bitmap = await createImageBitmap(archivo, { imageOrientation: 'from-image' });
@@ -47,10 +50,32 @@ async function redimensionarImagen(archivo) {
     canvas.width = ancho;
     canvas.height = alto;
     canvas.getContext('2d').drawImage(bitmap, 0, 0, ancho, alto);
-    return canvas.toDataURL('image/jpeg', 0.8);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob devolvió null'))),
+        'image/jpeg',
+        0.92,
+      );
+    });
   } finally {
     bitmap.close?.();
   }
+}
+
+// Object URLs de las fotos que se están mostrando en "Comparar"/"Detalle" en
+// este momento. Se liberan al empezar el próximo render de cualquiera de las
+// dos vistas, para no acumular URLs huérfanas al navegar.
+let urlsFotoVigentes = [];
+
+function liberarUrlsFoto() {
+  urlsFotoVigentes.forEach((url) => URL.revokeObjectURL(url));
+  urlsFotoVigentes = [];
+}
+
+function urlParaBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  urlsFotoVigentes.push(url);
+  return url;
 }
 
 function escapar(texto) {
@@ -138,21 +163,27 @@ function vistaAgregar() {
   };
   const guardar = document.getElementById('guardar');
 
-  let foto = null;
+  let foto = null; // Blob ya redimensionado, o null si no se tomó foto.
+  let urlPreviewActual = null;
   const fotoInput = document.getElementById('foto-input');
   const fotoSelector = document.getElementById('foto-selector');
   const fotoPreview = document.getElementById('foto-preview');
   const fotoIcono = document.getElementById('foto-icono');
 
-  if (!('createImageBitmap' in window)) {
-    // Navegador muy viejo: se oculta el selector en vez de ofrecer un botón
-    // que va a fallar silenciosamente.
+  if (!('createImageBitmap' in window) || !('indexedDB' in window)) {
+    // Navegador muy viejo, o sin IndexedDB (donde se guardan las fotos): se
+    // oculta el selector en vez de ofrecer un botón que va a fallar.
     fotoSelector.hidden = true;
   }
 
   function actualizarPreviewFoto() {
+    if (urlPreviewActual) {
+      URL.revokeObjectURL(urlPreviewActual);
+      urlPreviewActual = null;
+    }
     if (foto) {
-      fotoPreview.src = foto;
+      urlPreviewActual = URL.createObjectURL(foto);
+      fotoPreview.src = urlPreviewActual;
       fotoPreview.hidden = false;
       fotoIcono.classList.add('foto-selector__icono--overlay');
     } else {
@@ -238,12 +269,12 @@ function vistaAgregar() {
   Object.values(campos).forEach((input) => input.addEventListener('input', refrescar));
   refrescar();
 
-  document.getElementById('form-paquete').addEventListener('submit', (evento) => {
+  document.getElementById('form-paquete').addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const { precio, rollos, hojas, desglose } = refrescar();
     if (!desglose) return;
 
-    almacen.guardar({
+    await almacen.guardar({
       marca: campos.marca.value,
       precio,
       rollosPorPaquete: rollos,
@@ -261,11 +292,17 @@ function vistaAgregar() {
 
 // --- Vista: Comparar ------------------------------------------------------
 
-function vistaComparar() {
+async function vistaComparar() {
   panelTitulo.textContent = 'Comparar';
   btnVolver.hidden = true;
+  liberarUrlsFoto();
 
-  const entradas = almacen.listar();
+  const entradas = await Promise.all(
+    almacen.listar().map(async (entrada) => ({
+      ...entrada,
+      fotoUrl: entrada.tieneFoto ? urlParaBlob(await leerFoto(entrada.id)) : null,
+    })),
+  );
   const mejor = entradas[0];
 
   panelCuerpo.innerHTML = mejor
@@ -290,8 +327,8 @@ function vistaComparar() {
         <article class="paquete" data-id="${entrada.id}" role="button" tabindex="0">
           <div class="paquete__cabecera">
             <div class="chip-icono">${
-              entrada.foto
-                ? `<img src="${entrada.foto}" alt="" />`
+              entrada.fotoUrl
+                ? `<img src="${entrada.fotoUrl}" alt="" />`
                 : entrada.esSimulado
                   ? ICONO_SIMULADO
                   : ICONO_CARRITO
@@ -325,8 +362,8 @@ function vistaComparar() {
     boton.addEventListener('click', (evento) => {
       evento.stopPropagation();
       const entrada = entradas.find((item) => item.id === boton.dataset.borrar);
-      pedirConfirmacion(entrada, () => {
-        almacen.eliminar(entrada.id);
+      pedirConfirmacion(entrada, async () => {
+        await almacen.eliminar(entrada.id);
         vistaComparar();
         mostrarAviso(`${entrada.marca} eliminado`);
       });
@@ -349,9 +386,10 @@ function vistaComparar() {
 
 // --- Vista: Detalle + simulador -------------------------------------------
 
-function vistaDetalle(id) {
+async function vistaDetalle(id) {
   panelTitulo.textContent = 'Detalle';
   btnVolver.hidden = false;
+  liberarUrlsFoto();
 
   const entrada = almacen.porId(id);
   if (!entrada) {
@@ -359,6 +397,7 @@ function vistaDetalle(id) {
     vista.innerHTML = '<div class="vacio"><h2>Esta entrada ya no existe.</h2></div>';
     return;
   }
+  const fotoUrl = entrada.tieneFoto ? urlParaBlob(await leerFoto(entrada.id)) : null;
 
   panelCuerpo.innerHTML = `
     <h2 style="font-size:22px">${escapar(entrada.marca)}</h2>
@@ -369,9 +408,9 @@ function vistaDetalle(id) {
   vista.innerHTML = `
     <div class="tarjeta tarjeta--amplia">
       ${
-        entrada.foto
+        fotoUrl
           ? `<div class="fila-foto-detalle">
-               <img class="miniatura-detalle" src="${entrada.foto}" alt="" />
+               <img class="miniatura-detalle" src="${fotoUrl}" alt="" />
                <h2 class="seccion" style="flex:1">Paquete</h2>
              </div>`
           : '<h2 class="seccion">Paquete</h2>'
@@ -443,15 +482,19 @@ function vistaDetalle(id) {
   input.addEventListener('input', refrescar);
   refrescar();
 
-  boton.addEventListener('click', () => {
+  boton.addEventListener('click', async () => {
     if (!simulacion) return;
-    almacen.guardar({
+    // Se relee la foto (no la del <img>, esa es un object URL efímero) para
+    // que la simulación quede con su propia copia en IndexedDB, igual de
+    // independiente del original que en Android.
+    const fotoOriginal = entrada.tieneFoto ? await leerFoto(entrada.id) : null;
+    await almacen.guardar({
       marca: `${entrada.marca} (${simulacion.hojasHipoteticas} hojas)`,
       precio: simulacion.precioPaqueteSimulado,
       rollosPorPaquete: entrada.rollosPorPaquete,
       hojasPorRollo: simulacion.hojasHipoteticas,
       esSimulado: true,
-      foto: entrada.foto,
+      foto: fotoOriginal,
     });
     input.value = '';
     refrescar();
@@ -461,7 +504,7 @@ function vistaDetalle(id) {
 
 // --- Ruteo ----------------------------------------------------------------
 
-function enrutar() {
+async function enrutar() {
   const ruta = location.hash || '#/agregar';
   const detalle = ruta.match(/^#\/detalle\/(.+)$/);
 
@@ -473,8 +516,8 @@ function enrutar() {
     else tab.removeAttribute('aria-current');
   });
 
-  if (detalle) vistaDetalle(detalle[1]);
-  else if (ruta.startsWith('#/comparar')) vistaComparar();
+  if (detalle) await vistaDetalle(detalle[1]);
+  else if (ruta.startsWith('#/comparar')) await vistaComparar();
   else vistaAgregar();
 
   window.scrollTo(0, 0);
@@ -498,8 +541,16 @@ vista.addEventListener('click', (evento) => {
   }
 });
 
-window.addEventListener('hashchange', enrutar);
-enrutar();
+// La migración de fotos viejas (guardadas como data URL en localStorage,
+// antes de pasar a IndexedDB) corre una sola vez, antes del primer render.
+async function iniciar() {
+  await almacen.migrarFotosLegacy();
+  window.addEventListener('hashchange', () => {
+    enrutar().catch((error) => console.error('Error al enrutar', error));
+  });
+  await enrutar();
+}
+iniciar().catch((error) => console.error('Error al iniciar RolloApp', error));
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

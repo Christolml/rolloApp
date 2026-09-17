@@ -25,8 +25,8 @@ import java.util.UUID
 object AlmacenFotos {
 
     private const val CARPETA = "photos"
-    private const val LADO_MAXIMO_PX = 1024
-    private const val CALIDAD_JPEG = 80
+    private const val LADO_MAXIMO_PX = 2048
+    private const val CALIDAD_JPEG = 92
 
     private fun carpetaFotos(context: Context): File =
         File(context.filesDir, CARPETA).apply { mkdirs() }
