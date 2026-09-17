@@ -3,8 +3,8 @@
 ## Current State
 
 **Last Updated:** 2026-09-16
-**Active Feature:** ninguna — feat-018 (zoom de la foto en el detalle) cerrada
-y probada en las dos plataformas.
+**Active Feature:** ninguna — feat-019 (calidad de fotos + PWA a IndexedDB)
+cerrada y probada de punta a punta.
 
 ## Status
 
@@ -26,8 +26,12 @@ y probada en las dos plataformas.
       version=2, Coil). Probada de punta a punta con el celular desbloqueado:
       capturar, guardar, ver en Comparar/Detalle, eliminar.
 - [x] feat-017 — Foto de producto en la PWA (`<input capture>` + canvas).
+      Superado por feat-019 (localStorage → IndexedDB).
 - [x] feat-018 — Zoom de la foto en el detalle: tocarla la agranda (220dp/px),
       tocar afuera la vuelve a su tamaño y lugar, en Android y en la PWA.
+- [x] feat-019 — Calidad de fotos: Android sube a 2048px/calidad 92; la PWA
+      migra el almacenamiento de fotos de localStorage a IndexedDB (Blob, sin
+      límite de cuota chica) con migración automática de lo ya guardado.
 
 ### What's Next
 
@@ -108,6 +112,28 @@ y probada en las dos plataformas.
   campo de texto) se consume ahí y nunca llega al detector de la pantalla, así
   que conviven sin gestos en conflicto — confirmado a mano tipeando en el
   campo del simulador con la lógica de colapso activa.
+- **PWA: fotos en IndexedDB (`Blob`), datos del paquete siguen en
+  localStorage**: no se movió todo — solo la foto, que es lo pesado.
+  `localStorage` tiene un techo de ~5-10 MB para TODA la app; una sola foto
+  de buena calidad en base64 (+37% por la codificación) podía casi llenarlo.
+  `storage.js` pasó a `async` por esto; `listar()`/`porId()` siguen síncronas
+  y devuelven `tieneFoto` (no la foto en sí) para que quien renderice decida
+  si vale la pena pedirla.
+- **Migración automática de fotos viejas** (`migrarFotosLegacy()`, corre una
+  vez al arrancar, antes del primer render): sin esto, cualquier foto que ya
+  estuviera guardada en el formato viejo (base64 en localStorage) se hubiera
+  vuelto invisible de un día para el otro con este cambio.
+- **Gotcha de testing, no del código**: `--virtual-time-budget` de Chrome
+  headless hace que `indexedDB.open()` no dispare NINGÚN callback (ni
+  `onsuccess` ni `onerror` ni `onblocked`) — problema conocido de ese modo,
+  no del código de la app. Verificar flujos con IndexedDB requiere Chrome
+  headless real (`--headless=new`, sin `--virtual-time-budget`) manejado por
+  CDP con esperas de reloj real, no por el atajo de `--screenshot` con tiempo
+  virtual que veníamos usando para las pruebas anteriores de la PWA.
+- **Object URLs se liberan al empezar cada render** (`liberarUrlsFoto()`), no
+  al terminar: como `vistaComparar`/`vistaDetalle` reemplazan
+  `vista.innerHTML` igual, es más simple liberar las del render anterior justo
+  antes de crear las nuevas que rastrear cuándo termina de usarse cada una.
 
 ## Evidence of Completion
 
@@ -125,6 +151,13 @@ y probada en las dos plataformas.
 - [x] feat-018: probado a mano en el SM_S918U1 sobre una entrada real (papel
       MAX) y en la PWA con clicks programáticos vía Chrome headless — tocar
       la foto la agranda, tocar afuera la achica, en las dos plataformas.
+- [x] feat-019: Android — build/tests verdes (cambio de constantes, bajo
+      riesgo). PWA — verificado con Chrome headless real vía CDP (sin
+      `--virtual-time-budget`): guardar con foto escribe en IndexedDB de
+      verdad (confirmado abriendo "Comparar" y el Detalle en pestañas
+      nuevas), la simulación conserva su propia copia al borrar el original,
+      y una entrada sembrada en el formato viejo (base64) se migra sola al
+      arrancar y le desaparece el campo `foto`.
 - [ ] feat-007 (persistencia de la app Android tras cerrar y reabrir) pendiente.
 
 ## Notes for Next Session

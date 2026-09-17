@@ -134,7 +134,7 @@
       "description": "input[type=file][capture=environment] junto al campo Marca abre la cámara del celular directo (sin galería). redimensionarImagen() en app.js usa createImageBitmap con imageOrientation:'from-image' (corrige EXIF) + canvas a 1024px + JPEG calidad 0.8, igual que AlmacenFotos del lado Android. El resultado (data URL) se guarda como campo 'foto' en el mismo JSON de localStorage — sin IndexedDB, storage.js sigue síncrono. Se muestra en el chip de 'Comparar' y como miniatura de 64px en el detalle. Las simulaciones heredan una copia del string.",
       "dependencies": ["feat-015"],
       "status": "done",
-      "evidence": "Sintaxis verificada (node --check) en app.js y storage.js. Verificado visualmente con Chrome headless sobre datos sembrados en localStorage: el selector de foto se ve correctamente junto a 'Marca' en Agregar, la miniatura roja de prueba se pinta en el chip de 'Comparar' (y el ícono genérico en las entradas sin foto), y la miniatura de 64px aparece junto a 'Paquete' en el Detalle."
+      "evidence": "Sintaxis verificada (node --check) en app.js y storage.js. Verificado visualmente con Chrome headless sobre datos sembrados en localStorage: el selector de foto se ve correctamente junto a 'Marca' en Agregar, la miniatura roja de prueba se pinta en el chip de 'Comparar' (y el ícono genérico en las entradas sin foto), y la miniatura de 64px aparece junto a 'Paquete' en el Detalle. SUPERADO por feat-019: el almacenamiento pasó de localStorage (data URL) a IndexedDB (Blob) para poder subir la calidad sin arriesgar la cuota de localStorage."
     },
     {
       "id": "feat-018",
@@ -143,6 +143,14 @@
       "dependencies": ["feat-016", "feat-017"],
       "status": "done",
       "evidence": "Android: ./gradlew testDebugUnitTest assembleDebug :app:lintDebug -> 20 tests verdes, BUILD SUCCESSFUL, 0 errores. Probado a mano en el SM_S918U1 sobre una entrada real (papel MAX) instalado con adb install -r: tocar la foto la agranda a 220dp centrada sin overlay de cámara, tocar en 'Precios unitarios' la vuelve a 64dp junto al título, el campo del simulador sigue aceptando texto con la lógica de colapso activa. PWA: verificado con Chrome headless disparando clicks programáticos (MouseEvent) sobre un iframe con datos sembrados en localStorage — capturas confirman que el click en la miniatura la lleva a 220px en columna, y un click en 'Precios unitarios' la vuelve a 64px en fila, igual que en Android."
+    },
+    {
+      "id": "feat-019",
+      "name": "Subir la calidad de las fotos guardadas (Android + PWA)",
+      "description": "Android: AlmacenFotos sube de 1024px/calidad 80 a 2048px/calidad 92 (dos constantes, mismo código de downsampling/EXIF). PWA: migración completa de almacenamiento de fotos de localStorage (data URL, técho ~5-10MB para toda la app) a IndexedDB (Blob binario, sin inflación base64, cuota muchísimo mayor) — nuevo pwa/js/fotos-db.js, storage.js pasa a async con flag tieneFoto en vez del string foto, migrarFotosLegacy() convierte lo ya guardado en el primer arranque, y app.js (vistaAgregar/vistaComparar/vistaDetalle/enrutar) pasan a async con URL.createObjectURL para pintar los Blobs y un registro de URLs liberadas en cada render.",
+      "dependencies": ["feat-016", "feat-017"],
+      "status": "done",
+      "evidence": "Android: ./gradlew testDebugUnitTest assembleDebug -> 20 tests verdes, BUILD SUCCESSFUL (cambio de constantes, sin riesgo). PWA: node --test pwa/js/calculator.test.mjs -> 10 tests verdes (sin tocar). Verificado end-to-end con Chrome headless real (CDP vía WebSocket nativo de Node, NO --virtual-time-budget: ese modo hace que indexedDB.open() nunca dispare ningún callback, es una limitación conocida del modo, no un bug del código) sobre un perfil de Chrome persistente: guardar un paquete con foto sintética escribe en IndexedDB real: se confirmó abriendo 'Comparar' y el Detalle en pestañas NUEVAS (persistencia real entre navegaciones, no solo en memoria); guardar una simulación y borrar el original confirma que la simulación conserva su propia copia del Blob; se sembró una entrada con el formato viejo (foto en base64 dentro de localStorage) y se confirmó que migrarFotosLegacy() la convierte a Blob en IndexedDB y le quita el campo foto en el primer arranque."
     }
   ]
 }
