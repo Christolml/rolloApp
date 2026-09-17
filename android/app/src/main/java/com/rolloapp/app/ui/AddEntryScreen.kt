@@ -1,7 +1,5 @@
 package com.rolloapp.app.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,16 +22,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,10 +38,6 @@ import com.rolloapp.app.data.AlmacenFotos
 import com.rolloapp.app.domain.PaperPriceBreakdown
 import com.rolloapp.app.domain.PaperPriceCalculator
 import com.rolloapp.app.ui.theme.Spacing
-import java.io.File
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Alta de un paquete. El panel teal de arriba muestra el precio por hoja
@@ -53,6 +46,9 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun AddEntryScreen(
+    fotoCapturadaExterna: String?,
+    onConsumirFotoCapturada: () -> Unit,
+    onAbrirCamara: () -> Unit,
     onGuardar: (
         marca: String,
         precio: Double,
@@ -62,54 +58,21 @@ fun AddEntryScreen(
     ) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     var marca by rememberSaveable { mutableStateOf("") }
     var precioTexto by rememberSaveable { mutableStateOf("") }
     var rollosTexto by rememberSaveable { mutableStateOf("") }
     var hojasTexto by rememberSaveable { mutableStateOf("") }
     var fotoPath by rememberSaveable { mutableStateOf<String?>(null) }
-    // Sobrevive a que el proceso muera mientras la app de cámara está en primer
-    // plano (puede pasar en dispositivos con poca memoria).
-    var archivoPendienteRuta by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val lanzadorCamara = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture(),
-    ) { exito ->
-        val rutaPendiente = archivoPendienteRuta
-        archivoPendienteRuta = null
-        if (rutaPendiente == null) return@rememberLauncherForActivityResult
-        val archivo = File(rutaPendiente)
-        if (!exito) {
-            archivo.delete()
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            val procesada = withContext(Dispatchers.IO) {
-                AlmacenFotos.downsamplearEnElLugar(archivo)
-            }
-            if (procesada) {
-                fotoPath = archivo.absolutePath
-            } else {
-                // La foto falló (0 bytes, formato inesperado, etc.): se sigue
-                // pudiendo guardar el paquete solo con el nombre.
-                archivo.delete()
-            }
-        }
-    }
-
-    fun lanzarCamara() {
-        fotoPath?.let { AlmacenFotos.borrar(it) } // "volver a tomar": descarta la anterior
-        val archivo = AlmacenFotos.crearArchivoNuevo(context)
-        archivoPendienteRuta = archivo.absolutePath
-        val uri = AlmacenFotos.uriParaArchivo(context, archivo)
-        runCatching { lanzadorCamara.launch(uri) }
-            .onFailure {
-                // No hay ninguna app de cámara instalada, o falló al resolver el intent.
-                archivoPendienteRuta = null
-                archivo.delete()
-            }
+    // La foto se saca en su propia pantalla (CameraCaptureScreen) y vuelve por acá
+    // vía el savedStateHandle de la pantalla anterior en el back stack. Si ya
+    // había una foto (por ejemplo, "volver a tomar"), se borra la vieja: cada
+    // entrada es dueña de un solo archivo a la vez mientras se está armando.
+    LaunchedEffect(fotoCapturadaExterna) {
+        val nueva = fotoCapturadaExterna ?: return@LaunchedEffect
+        fotoPath?.let { AlmacenFotos.borrar(it) }
+        fotoPath = nueva
+        onConsumirFotoCapturada()
     }
 
     val precio = precioTexto.aDoubleOrNull()
@@ -149,7 +112,7 @@ fun AddEntryScreen(
             ) {
                 MiniaturaFoto(
                     fotoPath = fotoPath,
-                    onClick = ::lanzarCamara,
+                    onClick = onAbrirCamara,
                     modifier = Modifier.size(72.dp),
                 )
                 CampoFormulario(

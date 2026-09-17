@@ -9,6 +9,7 @@ composeBom = "2025.06.01"
 navigationCompose = "2.9.0"
 room = "2.7.1"
 coilCompose = "2.7.0"
+cameraX = "1.4.1"
 junit = "4.13.2"
 
 [libraries]
@@ -29,6 +30,10 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraX" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]

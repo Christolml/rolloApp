@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-09-16
-**Active Feature:** ninguna — feat-019 (calidad de fotos + PWA a IndexedDB)
+**Active Feature:** ninguna — feat-020 (cámara nativa con CameraX en Android)
 cerrada y probada de punta a punta.
 
 ## Status
@@ -31,14 +31,20 @@ cerrada y probada de punta a punta.
       tocar afuera la vuelve a su tamaño y lugar, en Android y en la PWA.
 - [x] feat-019 — Calidad de fotos: Android sube a 2048px/calidad 92; la PWA
       migra el almacenamiento de fotos de localStorage a IndexedDB (Blob, sin
-      límite de cuota chica) con migración automática de lo ya guardado.
+      límite de cuota chica) con migración automática de lo ya guardado. Parte
+      Android superada por feat-020 (el cuello de botella real no era el
+      resize, era la app de cámara del sistema).
+- [x] feat-020 — Cámara nativa con CameraX (Android): reemplaza el intent
+      `TakePicture()` por una pantalla propia que habla directo al sensor
+      (`CAPTURE_MODE_MAXIMIZE_QUALITY` + resolución más alta disponible).
+      Salto real de resolución confirmado (1868×4000 → 3060×4080).
 
 ### What's Next
 
 1. Probar a mano la corrección de orientación EXIF con una foto real en
-   horizontal (la prueba de hoy usó el lente tapado, así que no había nada
-   que rotar) — bajo riesgo, la lógica es la misma que ya cubre el downsampling
-   probado.
+   horizontal (todas las pruebas de cámara hasta ahora usaron el lente tapado
+   a propósito, así que no había nada que rotar) — bajo riesgo, la lógica no
+   cambió con CameraX.
 2. feat-007: verificación manual end-to-end en el dispositivo (persistencia tras
    cerrar y reabrir la app Android) — sigue pendiente.
 3. Si alguna vez hace falta distribuir la app Android fuera del celular del
@@ -63,6 +69,10 @@ cerrada y probada de punta a punta.
       intencional, no una inconsistencia.
 - [ ] No hay emulador ni Android Studio: toda verificación de UI de Android
       depende de un celular físico conectado por adb.
+- [ ] **Desde feat-020, Android pide el permiso `CAMERA` en runtime** (antes
+      no pedía ningún permiso, delegaba a la app de cámara del sistema). Si
+      el usuario lo niega, "Agregar" se sigue pudiendo guardar sin foto — no
+      es bloqueante, pero es un cambio de comportamiento visible.
 - [ ] `local.properties` no está en git; `android/init.sh` lo recrea solo.
 
 ## Decisions Made
@@ -70,15 +80,38 @@ cerrada y probada de punta a punta.
 - **Migración de Room real, nunca `fallbackToDestructiveMigration()`**: el
   usuario tiene datos guardados en su celular; agregar `fotoPath` sin migrar
   los habría borrado. `MIGRATION_1_2` hace `ALTER TABLE ... ADD COLUMN`.
-- **Cámara vía `TakePicture()` + `FileProvider`, sin CameraX**: alcanza para
-  esta app y no requiere pedir el permiso `CAMERA` (se delega a la app de
-  cámara del sistema).
+- **Cámara vía `TakePicture()` + `FileProvider`, sin CameraX** *(revertida en
+  feat-020)*: al principio alcanzaba y no requería pedir el permiso `CAMERA`.
+  Se abandonó porque delegar la resolución/calidad a la app de cámara del
+  sistema significaba no poder pedirle explícitamente "máxima calidad" — el
+  cuello de botella real de las fotos borrosas estaba ahí, no en el
+  procesamiento de RolloApp (confirmado comparando archivos: con el intent el
+  techo real terminaba siendo 1868×4000 sin importar cuánto se subiera
+  `LADO_MAXIMO_PX` en `AlmacenFotos`).
+- **CameraX con `ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY` +
+  `ResolutionSelector(HIGHEST_AVAILABLE_STRATEGY)`**: la app le habla directo
+  al sensor en vez de a una app de cámara externa. Requiere el permiso
+  `CAMERA` en runtime (antes no hacía falta ningún permiso), pero es la única
+  forma de controlar la calidad de captura en vez de heredar lo que decida la
+  app de cámara de turno. Verificado con archivos reales: 3060×4080 (12.5MP)
+  contra los 1868×4000 (7.5MP) que devolvía el intent.
+- **`FileProvider`, `file_paths.xml`, el `<queries>` de `IMAGE_CAPTURE` y
+  `AlmacenFotos.uriParaArchivo()` se eliminaron por completo** con feat-020:
+  solo existían para entregarle el archivo a una app de cámara externa, y
+  quedaron sin ningún llamador al pasar a CameraX (que escribe el archivo
+  directo, sin necesidad de una `content://` Uri).
+- **La foto capturada vuelve a `AddEntryScreen` por el `savedStateHandle` de
+  la entrada anterior del back stack** (patrón estándar de Navigation
+  Compose para resultados), no por un callback directo: `CameraCaptureScreen`
+  es una pantalla más del `NavHost`, no un diálogo ni un `ActivityResult`.
 - **Foto en `filesDir/photos` (almacenamiento privado), no en la galería**:
   cero permisos de almacenamiento en cualquier versión de Android.
-- **Downsampling a 1024px + JPEG 80 + corrección EXIF por rotación de
-  píxeles**, tanto en Android (`BitmapFactory`) como en la PWA
+- **Downsampling + JPEG + corrección EXIF por rotación de píxeles**, tanto en
+  Android (`BitmapFactory`, hoy 2048px/calidad 92) como en la PWA
   (`createImageBitmap` + canvas) — mismo criterio en las dos plataformas
-  aunque la implementación sea distinta.
+  aunque la implementación sea distinta. En Android, desde feat-020 esto ya
+  casi nunca recorta nada (CameraX entrega en la resolución pedida): queda
+  como red de seguridad de tamaño/orientación, no como el resize principal.
 - **Simulaciones copian el archivo/string de foto, no comparten referencia**:
   así se puede borrar el original o la simulación sin romper a la otra.
 - **PWA: foto como campo `foto` (data URL) dentro del mismo JSON de
@@ -158,6 +191,20 @@ cerrada y probada de punta a punta.
       nuevas), la simulación conserva su propia copia al borrar el original,
       y una entrada sembrada en el formato viejo (base64) se migra sola al
       arrancar y le desaparece el campo `foto`.
+- [x] feat-020: `./gradlew testDebugUnitTest assembleDebug :app:lintDebug` →
+      20 tests verdes, BUILD SUCCESSFUL, 0 warnings. Probado a mano (adb
+      input + screencap) en el SM_S918U1 tras `adb install -r`: permiso
+      `CAMERA` pedido al primer acceso, preview en vivo con el ícono verde de
+      cámara en uso del sistema (confirma que CameraX está atado al sensor);
+      archivo capturado comparado por `adb shell run-as ... | sips` contra
+      uno del intent viejo → 3060×4080 vs 1868×4000; "volver a tomar" borra
+      el archivo anterior (conteo de archivos antes/después); cancelar no
+      deja huérfanos (mismo conteo); revocar el permiso con
+      `adb shell pm revoke` muestra el mensaje de permiso sin crashear; una
+      entrada guardada con la foto de CameraX se vio bien en Comparar y
+      Detalle, con el zoom de feat-018 funcionando sin cambios, y se borró al
+      terminar la prueba sin dejar residuos. Las fotos reales del usuario
+      (MAX, Suave Complete, Regio, Petalo) no se tocaron.
 - [ ] feat-007 (persistencia de la app Android tras cerrar y reabrir) pendiente.
 
 ## Notes for Next Session
